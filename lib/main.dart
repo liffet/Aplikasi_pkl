@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
@@ -9,6 +10,8 @@ import 'pages/home_page.dart';
 import 'pages/kalender_page.dart';
 import 'pages/profile_page.dart';
 import 'models/user_model.dart';
+import 'services/auth_service.dart';
+import 'providers/user_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +20,14 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   Intl.defaultLocale = 'id_ID';
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -48,12 +58,15 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      // 🔹 Rute awal
-      initialRoute: '/login',
+      // 🔹 Rute awal berdasarkan status login
+      initialRoute: '/splash',
 
       // 🔹 Gunakan onGenerateRoute agar lebih fleksibel
       onGenerateRoute: (settings) {
         switch (settings.name) {
+          case '/splash':
+            return MaterialPageRoute(builder: (_) => const SplashScreen());
+
           case '/login':
             return MaterialPageRoute(builder: (_) => const LoginPage());
 
@@ -64,6 +77,7 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const KalenderPage());
 
           case '/home':
+            // Cek arguments untuk user
             final args = settings.arguments;
             if (args is UserModel) {
               return MaterialPageRoute(builder: (_) => HomePage(user: args));
@@ -71,7 +85,7 @@ class MyApp extends StatelessWidget {
             return _unauthorizedRoute();
 
           default:
-            return MaterialPageRoute(builder: (_) => const LoginPage());
+            return MaterialPageRoute(builder: (_) => const SplashScreen());
         }
       },
     );
@@ -87,6 +101,51 @@ class MyApp extends StatelessWidget {
             style: TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 🖼️ Splash Screen untuk cek status login
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.loadUser();
+
+    if (mounted) {
+      if (userProvider.isLoggedIn) {
+        Navigator.pushReplacementNamed(context, '/home', arguments: userProvider.user);
+      } else {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text('Memuat...'),
+          ],
         ),
       ),
     );

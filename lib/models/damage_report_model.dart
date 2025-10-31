@@ -3,6 +3,8 @@ class DamageReport {
   final int itemId;
   final String reason;
   final String status;
+  final String? itemCode; // kode barang
+  final String? itemName; // nama barang
   final DateTime? createdAt;
 
   DamageReport({
@@ -10,6 +12,8 @@ class DamageReport {
     required this.itemId,
     required this.reason,
     required this.status,
+    this.itemCode,
+    this.itemName,
     this.createdAt,
   });
 
@@ -19,6 +23,8 @@ class DamageReport {
       itemId: json['item_id'] ?? 0,
       reason: json['reason'] ?? '',
       status: json['status'] ?? 'pending',
+      itemCode: json['item_code'], // ambil dari API
+      itemName: json['item_name'], // ambil dari API
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,

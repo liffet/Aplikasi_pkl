@@ -1,0 +1,3 @@
+- [ ] Hapus navigasi bawah redundan dari kalender_page.dart
+- [ ] Ubah judul "Maintenance Hari Ini" menjadi "Maintenance pada Tanggal Terpilih"
+- [ ] Test tampilan kalender setelah perubahan

@@ -189,12 +189,20 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('✅ Password berhasil diubah');
+
+        // Check if new token is provided (in case backend invalidates old token)
+        if (data['token'] != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', data['token']);
+          print('✅ Token diperbarui setelah ganti password');
+        }
+
         return {'success': true, 'message': data['message'] ?? 'Password berhasil diubah'};
       } else if (response.statusCode == 422) {
         // Validation error
         final data = jsonDecode(response.body);
         String errorMessage = 'Gagal mengubah password';
-        
+
         if (data['errors'] != null) {
           // Ambil error pertama
           final errors = data['errors'] as Map<String, dynamic>;
@@ -202,7 +210,7 @@ class AuthService {
         } else if (data['message'] != null) {
           errorMessage = data['message'];
         }
-        
+
         print('⚠️ Validation error: $errorMessage');
         return {'success': false, 'message': errorMessage};
       } else if (response.statusCode == 401) {
@@ -222,14 +230,14 @@ class AuthService {
   // LOGOUT
   // ==============================
   Future<void> logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
-      await prefs.remove('user');
-      print('✅ Logout berhasil, data user & token dihapus');
-    } catch (e) {
-      print('Error logout: $e');
-    }
+    // Hapus data lokal untuk logout
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('user');
+    print('✅ Logout berhasil, data user & token dihapus');
+
+    // Note: Backend logout endpoint belum diimplementasi dengan benar
+    // Token akan expired secara otomatis di backend
   }
 
   // ==============================

@@ -5,10 +5,8 @@ import '../services/floor_service.dart';
 import '../models/room_model.dart';
 import '../models/floor_model.dart';
 import '../models/user_model.dart';
+import '../layout/navbar_layout.dart';
 import 'perangkat_page.dart';
-import 'kalender_page.dart';
-import 'login_page.dart';
-import 'profile_page.dart'; // ✅ Tambahkan import ini
 
 class HomePage extends StatefulWidget {
   final UserModel user;
@@ -30,12 +28,24 @@ class _HomePageState extends State<HomePage> {
   int? _selectedFloorId;
   String _searchQuery = '';
 
-  int _selectedIndex = 0; // 🔹 Index untuk bottom navbar
-
   @override
   void initState() {
     super.initState();
     fetchData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data setiap kali halaman muncul
+    if (mounted) {
+      fetchData();
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> fetchData() async {
@@ -87,45 +97,18 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _logout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Logout'),
-        content: const Text('Apakah kamu yakin ingin keluar dari akun ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-        (route) => false,
-      );
-    }
-  }
-
-  // 🔹 Isi halaman Home
   Widget _buildHomeContent() {
-    final formattedDate = DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate);
+    final formattedDate = DateFormat(
+      'd MMMM yyyy',
+      'id_ID',
+    ).format(_selectedDate);
 
     final filteredRooms = _rooms
-        .where((room) =>
-            (_selectedFloorId == null || room.floorId == _selectedFloorId) &&
-            (room.name.toLowerCase().contains(_searchQuery.toLowerCase())))
+        .where(
+          (room) =>
+              (_selectedFloorId == null || room.floorId == _selectedFloorId) &&
+              (room.name.toLowerCase().contains(_searchQuery.toLowerCase())),
+        )
         .toList();
 
     if (_isLoading) {
@@ -157,21 +140,29 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Icon(Icons.calendar_today, color: Colors.indigo),
-                ],
+              // Greeting
+              Text(
+                'Selamat Datang, ${widget.user.name}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
+              // Tanggal
+              Text(
+                formattedDate,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Horizontal Floor Selector
               SizedBox(
                 height: 90,
                 child: _floors.isEmpty
@@ -182,6 +173,7 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: (context, index) {
                           final floor = _floors[index];
                           final isSelected = floor.id == _selectedFloorId;
+
                           return GestureDetector(
                             onTap: () {
                               setState(() {
@@ -189,92 +181,191 @@ class _HomePageState extends State<HomePage> {
                               });
                             },
                             child: Container(
-                              width: 90,
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              width: 80,
+                              margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.indigo : Colors.white,
+                                color: isSelected
+                                    ? Colors.indigo.shade50
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? Colors.indigo
                                       : Colors.grey.shade300,
+                                  width: isSelected ? 2 : 1,
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: Colors.yellow.shade600,
-                                          offset: const Offset(3, 3),
-                                          blurRadius: 0,
-                                        )
-                                      ]
-                                    : [],
                               ),
-                              child: Center(
-                                child: Text(
-                                  floor.name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    floor.name.replaceAll('Lantai ', ''),
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected
+                                          ? Colors.indigo
+                                          : Colors.black87,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Lantai',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isSelected
+                                          ? Colors.indigo
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
                       ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
+              // Search Bar
               TextField(
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
                   });
                 },
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Pencarian ruangan...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  hintText: 'Pencarian...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
                   ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey.shade400,
+                    size: 24,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withOpacity(
+                        0.5,
+                      ), // border transparan sedikit
+                      width: 1.5,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: const BorderSide(
+                      color: Colors.indigo,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
+              // Daftar Ruangan Title
               const Text(
                 'Daftar Ruangan',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
+                  color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
+              // Room List
               filteredRooms.isEmpty
-                  ? const Center(child: Text('Tidak ada ruangan yang ditemukan'))
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text('Tidak ada ruangan yang ditemukan'),
+                      ),
+                    )
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredRooms.length,
                       itemBuilder: (context, index) {
                         final room = filteredRooms[index];
-                        return Card(
-                          elevation: 3,
-                          margin: const EdgeInsets.symmetric(vertical: 8),
+                        // Ambil inisial untuk avatar
+                        final initial = room.name.isNotEmpty
+                            ? room.name[0].toUpperCase()
+                            : '?';
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.shade200,
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
                           child: ListTile(
-                            leading: const Icon(Icons.meeting_room, size: 40),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: Container(
+                              width: 48, // lebar kotak
+                              height:
+                                  48, // tinggi kotak, sesuai radius sebelumnya
+                              decoration: BoxDecoration(
+                                color: Colors.indigo,
+                                borderRadius: BorderRadius.circular(
+                                  12,
+                                ), // sudut membulat
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+
                             title: Text(
                               room.name,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
                             ),
-                            subtitle: Text(
-                              'Lantai: ${room.floor?.name ?? "-"}',
-                            ),
+                            subtitle: room.floor != null
+                                ? Text(
+                                    '${room.floor!.name}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                : null,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -295,68 +386,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🔹 Build dengan BottomNavigationBar
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      _buildHomeContent(),
-      KalenderPage(user: widget.user),
-      ProfilePage(user: widget.user), // ✅ Tambahkan halaman Profile
-    ];
+    return NavbarLayout(user: widget.user, homeContent: _buildHomeContent());
+  }
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _selectedIndex == 0
-              ? 'Selamat Datang, ${widget.user.name}'
-              : _selectedIndex == 1
-                  ? 'Kalender Maintenance'
-                  : 'Profil',
-        ),
-        centerTitle: true,
-        actions: [
-          if (_selectedIndex == 0)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: fetchData,
-            ),
-          if (_selectedIndex != 2)
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.redAccent),
-              tooltip: 'Logout',
-              onPressed: _logout,
-            ),
-        ],
-      ),
-      body: (_selectedIndex >= 0 && _selectedIndex < pages.length)
-          ? pages[_selectedIndex]
-          : const Center(child: Text('Halaman tidak ditemukan')),
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex:
-            (_selectedIndex >= 0 && _selectedIndex < pages.length) ? _selectedIndex : 0,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Kalender',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
+// Extension untuk capitalize
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

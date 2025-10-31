@@ -3,8 +3,10 @@ import 'package:http/http.dart' as http;
 import '../models/damage_report_model.dart';
 
 class DamageReportService {
+  // ⚠️ Ganti IP dengan IP LAN kamu (jika test di emulator)
+  // contoh: 'http://10.0.2.2:8000/api/damage-reports' untuk Android emulator
   final String baseUrl = 'http://127.0.0.1:8000/api/damage-reports';
-
+  
   /// 🔹 Buat laporan baru
   Future<bool> createReport(DamageReport report, String token) async {
     try {
@@ -22,7 +24,8 @@ class DamageReportService {
         print('✅ Laporan berhasil dibuat: ${response.body}');
         return true;
       } else {
-        print('❌ Gagal membuat laporan: ${response.statusCode} -> ${response.body}');
+        print(
+            '❌ Gagal membuat laporan (${response.statusCode}): ${response.body}');
         return false;
       }
     } catch (e) {
@@ -31,7 +34,7 @@ class DamageReportService {
     }
   }
 
-  /// 🔹 Ambil semua laporan user
+  /// 🔹 Ambil semua laporan user (atau semua jika admin)
   Future<List<DamageReport>> getReports(String token) async {
     try {
       final response = await http.get(
@@ -43,11 +46,21 @@ class DamageReportService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final List<dynamic> reportsJson = data['data'] ?? [];
-        return reportsJson.map((json) => DamageReport.fromJson(json)).toList();
+        final Map<String, dynamic> body = jsonDecode(response.body);
+
+        // Pastikan struktur sesuai: { message: ..., data: [...] }
+        if (body.containsKey('data') && body['data'] is List) {
+          final List<dynamic> reportsJson = body['data'];
+          return reportsJson
+              .map((json) => DamageReport.fromJson(json))
+              .toList();
+        } else {
+          print('⚠️ Struktur respons tidak sesuai: ${response.body}');
+          return [];
+        }
       } else {
-        print('❌ Gagal mengambil laporan: ${response.statusCode} -> ${response.body}');
+        print(
+            '❌ Gagal mengambil laporan (${response.statusCode}): ${response.body}');
         return [];
       }
     } catch (e) {

@@ -17,7 +17,7 @@ class DamageReportDetailPage extends StatelessWidget {
       case 'rejected':
         return Colors.red;
       default:
-        return Colors.orange;
+        return const Color(0xFF003985);
     }
   }
 
@@ -37,242 +37,239 @@ class DamageReportDetailPage extends StatelessWidget {
     final statusColor = _statusColor(report.status);
     final statusLabel = _statusLabel(report.status);
     final dateFormatted = report.createdAt != null
-        ? DateFormat('dd MMMM yyyy', 'id_ID').format(report.createdAt!)
+        ? DateFormat('dd/MM/yyyy').format(report.createdAt!)
         : '-';
+    final dueDate = report.createdAt != null
+        ? DateFormat('dd/MM/yyyy')
+            .format(report.createdAt!.add(const Duration(days: 30)))
+        : '-';
+
+    final firstLetter = (report.itemName != null && report.itemName!.isNotEmpty)
+        ? report.itemName![0].toUpperCase()
+        : '?';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'Detail Laporan',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // === STATUS CARD ===
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
+      body: Column(
+        children: [
+          // Header dengan status
+          SafeArea(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              color: Colors.white,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          statusLabel == 'Approve'
-                              ? Icons.check_circle_outline
-                              : statusLabel == 'Rejected'
-                                  ? Icons.cancel_outlined
-                                  : Icons.hourglass_bottom,
-                          color: statusColor,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        statusLabel,
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      statusLabel == 'Approve'
+                          ? Icons.check_circle_outline
+                          : statusLabel == 'Rejected'
+                              ? Icons.cancel_outlined
+                              : Icons.hourglass_bottom,
+                      color: statusColor,
+                      size: 24,
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   Text(
-                    dateFormatted,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            const SizedBox(height: 24),
-
-            // === ALASAN ===
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
+          // Konten scrollable
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Alasan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Laporan ini bersifat arsip dan tidak dapat diubah. Anda hanya dapat melihat detail pelaporan yang telah dikirim.',
-                    style: TextStyle(color: Colors.black54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: TextEditingController(text: report.reason),
-                    readOnly: true,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // === PERANGKAT ===
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Perangkat',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      // Avatar huruf pertama dari itemId
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[800],
-                          borderRadius: BorderRadius.circular(8),
+                  // Box Alasan
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Alasan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                        child: const Center(
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Laporan ini bersifat arsip dan tidak dapat diubah. Anda hanya dapat melihat detail pelaporan yang telah dikirim.',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: TextEditingController(text: report.reason),
+                          readOnly: true,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            contentPadding: const EdgeInsets.all(12),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.bottomRight,
                           child: Text(
-                            'S',
+                            dateFormatted,
                             style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontSize: 12,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Box Perangkat
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Perangkat',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                              width: 55,
+                              height: 55,
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(6),
+                                color: const Color(0xFF3949AB),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                'ITM-${report.itemId.toString().padLeft(5, '0')}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                              child: Center(
+                                child: Text(
+                                  firstLetter,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24,
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Switch',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    report.itemName ?? 'Tidak diketahui',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    report.itemCode != null
+                                        ? 'Kode: ${report.itemCode}'
+                                        : 'Kode tidak tersedia',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const Text(
-                              'Pusdatin',
-                              style: TextStyle(
-                                  color: Colors.black54, fontSize: 13),
+                            Text(
+                              dueDate,
+                              style: const TextStyle(
+                                color: Color(0xFFE53935),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      Text(
-                        '18/11/2025',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w500,
+
+                        const SizedBox(height: 300),
+
+                        // Tombol Kembali
+                        Center(
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: OutlinedButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back, size: 24),
+                              label: const Text(
+                                'Kembali',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF3949AB),
+                                side: const BorderSide(
+                                  color: Color(0xFF3949AB),
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-
-            const SizedBox(height: 40),
-
-            // === TOMBOL KEMBALI ===
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Kembali'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
