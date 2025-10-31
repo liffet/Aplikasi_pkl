@@ -7,12 +7,12 @@ import '../providers/user_provider.dart';
 
 class NavbarLayout extends StatefulWidget {
   final UserModel user;
-  final Widget homeContent;
+  final WidgetBuilder homeContentBuilder;
 
   const NavbarLayout({
     super.key,
     required this.user,
-    required this.homeContent,
+    required this.homeContentBuilder,
   });
 
   @override
@@ -28,7 +28,7 @@ class _NavbarLayoutState extends State<NavbarLayout> {
     final currentUser = userProvider.user ?? widget.user;
 
     final pages = [
-      widget.homeContent,
+      widget.homeContentBuilder(context),
       KalenderPage(user: currentUser),
       ProfilePage(user: currentUser),
     ];

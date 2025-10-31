@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import '../services/item_service.dart';
+import '../services/auth_service.dart'; // ✅ Tambahkan ini
 import '../models/item_model.dart';
 import '../models/user_model.dart';
+import '../providers/user_provider.dart'; // <-- tambahkan ini
 
 class KalenderPage extends StatefulWidget {
   final UserModel? user;
@@ -15,6 +19,7 @@ class KalenderPage extends StatefulWidget {
 
 class _KalenderPageState extends State<KalenderPage> {
   final ItemService _itemService = ItemService();
+  final AuthService _authService = AuthService(); // ✅ Tambahkan ini
 
   List<ItemModel> _allItems = [];
   List<ItemModel> _selectedDateItems = [];
@@ -25,11 +30,28 @@ class _KalenderPageState extends State<KalenderPage> {
   DateTime? _selectedDay;
   Map<DateTime, List<ItemModel>> _maintenanceEvents = {};
 
+  UserModel? _currentUser; // ✅ Tambahkan ini
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    _loadUserData(); // ✅ Load user data dulu
     fetchItems();
+  }
+
+  // ✅ Method untuk load user data dari SharedPreferences
+  Future<void> _loadUserData() async {
+    final freshUser = await _authService.getUserData();
+    if (freshUser != null) {
+      setState(() {
+        _currentUser = freshUser;
+      });
+    } else {
+      setState(() {
+        _currentUser = widget.user;
+      });
+    }
   }
 
   Future<void> fetchItems() async {
@@ -84,6 +106,34 @@ class _KalenderPageState extends State<KalenderPage> {
     }
   }
 
+  // Panggil ini setelah update profil berhasil
+  Future<void> _notifyProviderUserUpdated() async {
+    try {
+      await Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).forceRefreshUser();
+      setState(() {
+        _currentUser = Provider.of<UserProvider>(context, listen: false).user;
+      });
+      debugPrint(
+        '✅ KalenderPage: Provider di-refresh, nama sekarang: ${_currentUser?.name}',
+      );
+    } catch (e) {
+      debugPrint('❌ KalenderPage: gagal refresh provider: $e');
+    }
+  }
+
+  // Contoh: setelah Anda memanggil _authService.updateProfile(...) dan mendapat sukses:
+  Future<void> _onSaveProfileSuccess() async {
+    await _notifyProviderUserUpdated();
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profil diperbarui')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +156,7 @@ class _KalenderPageState extends State<KalenderPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              widget.user?.name ?? "User",
+              _currentUser?.name ?? widget.user?.name ?? "User", // ✅ Ubah ini
               style: const TextStyle(
                 fontSize: 16,
                 color: Color.fromARGB(255, 0, 0, 0),
@@ -120,24 +170,24 @@ class _KalenderPageState extends State<KalenderPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
-              ? _buildErrorState()
-              : SafeArea(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        _buildCalendarCard(),
-                        const SizedBox(height: 20),
-                        _buildSectionTitle(),
-                        const SizedBox(height: 8),
-                        _buildMaintenanceList(),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
-                  ),
+          ? _buildErrorState()
+          : SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildCalendarCard(),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(),
+                    const SizedBox(height: 8),
+                    _buildMaintenanceList(),
+                    const SizedBox(height: 30),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
@@ -180,10 +230,14 @@ class _KalenderPageState extends State<KalenderPage> {
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
-          leftChevronIcon:
-              Icon(Icons.chevron_left_rounded, color: Colors.grey[700]),
-          rightChevronIcon:
-              Icon(Icons.chevron_right_rounded, color: Colors.grey[700]),
+          leftChevronIcon: Icon(
+            Icons.chevron_left_rounded,
+            color: Colors.grey[700],
+          ),
+          rightChevronIcon: Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.grey[700],
+          ),
         ),
         daysOfWeekStyle: DaysOfWeekStyle(
           weekdayStyle: TextStyle(
@@ -259,7 +313,11 @@ class _KalenderPageState extends State<KalenderPage> {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.event_available, size: 64, color: Colors.grey.shade300),
+              Icon(
+                Icons.event_available,
+                size: 64,
+                color: Colors.grey.shade300,
+              ),
               const SizedBox(height: 12),
               Text(
                 'Tidak ada maintenance di tanggal ini',
@@ -313,7 +371,9 @@ class _KalenderPageState extends State<KalenderPage> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(6),
@@ -339,10 +399,7 @@ class _KalenderPageState extends State<KalenderPage> {
                     const SizedBox(height: 2),
                     Text(
                       item.room?.name ?? 'Ruangan tidak diketahui',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -361,10 +418,7 @@ class _KalenderPageState extends State<KalenderPage> {
         children: [
           Text(_errorMessage, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: fetchItems,
-            child: const Text('Coba Lagi'),
-          ),
+          ElevatedButton(onPressed: fetchItems, child: const Text('Coba Lagi')),
         ],
       ),
     );

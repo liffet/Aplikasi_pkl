@@ -18,11 +18,12 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final savedUser = await _authService.getUserData();
-      _user = savedUser;
+      final fresh = await _authService.getUserData();
+      _user = fresh;
+      print('🔄 UserProvider: User loaded - ${_user?.name}');
     } catch (e) {
-      print('Error loading user: $e');
       _user = null;
+      print('❌ UserProvider: loadUser error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -35,18 +36,16 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Bersihkan data lama sebelum login baru
-      await _authService.logout();
-
-      final loggedInUser = await _authService.login(email, password);
-      if (loggedInUser != null) {
-        _user = loggedInUser;
+      final result = await _authService.login(email, password);
+      if (result != null) {
+        _user = result;
+        _isLoading = false;
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
-      print('Login error: $e');
+      print('❌ UserProvider: login error: $e');
       return false;
     } finally {
       _isLoading = false;
@@ -60,15 +59,14 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final registeredUser = await _authService.register(name, email, password);
-      if (registeredUser != null) {
-        _user = registeredUser;
-        notifyListeners();
+      final result = await _authService.register(name, email, password);
+      if (result != null) {
+        _user = result;
         return true;
       }
       return false;
     } catch (e) {
-      print('Register error: $e');
+      print('❌ UserProvider: register error: $e');
       return false;
     } finally {
       _isLoading = false;
@@ -76,7 +74,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // Update profile
+  // Update profile dengan force refresh
   Future<bool> updateProfile(String name, String email) async {
     if (_user == null) return false;
 
@@ -84,21 +82,17 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final token = _user!.token;
-      final updatedUser = await _authService.updateProfile(
-        name: name,
-        email: email,
-        token: token,
-      );
-
-      if (updatedUser != null) {
-        _user = updatedUser;
+      final token = await _authService.getToken();
+      if (token == null) return false;
+      final updated = await _authService.updateProfile(token: token, name: name, email: email);
+      if (updated != null) {
+        _user = updated;
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
-      print('Update profile error: $e');
+      print('❌ UserProvider: updateProfile error: $e');
       return false;
     } finally {
       _isLoading = false;
@@ -116,16 +110,21 @@ class UserProvider with ChangeNotifier {
       _user = null;
       notifyListeners();
     } catch (e) {
-      print('Logout error: $e');
+      print('❌ UserProvider: Logout error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Clear user data (untuk force logout)
+  // Clear user data
   void clearUser() {
     _user = null;
     notifyListeners();
+  }
+
+  // Force refresh user data
+  Future<void> forceRefreshUser() async {
+    await loadUser();
   }
 }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../services/room_service.dart';
 import '../services/floor_service.dart';
 import '../models/room_model.dart';
 import '../models/floor_model.dart';
-import '../models/user_model.dart';
 import '../layout/navbar_layout.dart';
+import '../providers/user_provider.dart';
 import 'perangkat_page.dart';
 
 class HomePage extends StatefulWidget {
-  final UserModel user;
-  const HomePage({super.key, required this.user});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -37,15 +37,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh data setiap kali halaman muncul
     if (mounted) {
       fetchData();
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> fetchData() async {
@@ -98,6 +92,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHomeContent() {
+    final userProvider = Provider.of<UserProvider>(context);
+    final currentUser = userProvider.user;
+
     final formattedDate = DateFormat(
       'd MMMM yyyy',
       'id_ID',
@@ -110,6 +107,8 @@ class _HomePageState extends State<HomePage> {
               (room.name.toLowerCase().contains(_searchQuery.toLowerCase())),
         )
         .toList();
+
+    print('🔄 HomePage building with user: ${currentUser?.name}');
 
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -132,7 +131,10 @@ class _HomePageState extends State<HomePage> {
     }
 
     return RefreshIndicator(
-      onRefresh: fetchData,
+      onRefresh: () async {
+        await Provider.of<UserProvider>(context, listen: false).loadUser();
+        await fetchData();
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
@@ -142,7 +144,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               // Greeting
               Text(
-                'Selamat Datang, ${widget.user.name}',
+                'Selamat Datang, ${currentUser?.name ?? "User"}',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -256,9 +258,7 @@ class _HomePageState extends State<HomePage> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide(
-                      color: Colors.grey.withOpacity(
-                        0.5,
-                      ), // border transparan sedikit
+                      color: Colors.grey.withOpacity(0.5),
                       width: 1.5,
                     ),
                   ),
@@ -306,7 +306,6 @@ class _HomePageState extends State<HomePage> {
                       itemCount: filteredRooms.length,
                       itemBuilder: (context, index) {
                         final room = filteredRooms[index];
-                        // Ambil inisial untuk avatar
                         final initial = room.name.isNotEmpty
                             ? room.name[0].toUpperCase()
                             : '?';
@@ -330,14 +329,11 @@ class _HomePageState extends State<HomePage> {
                               vertical: 8,
                             ),
                             leading: Container(
-                              width: 48, // lebar kotak
-                              height:
-                                  48, // tinggi kotak, sesuai radius sebelumnya
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
                                 color: Colors.indigo,
-                                borderRadius: BorderRadius.circular(
-                                  12,
-                                ), // sudut membulat
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
                               child: Text(
@@ -349,7 +345,6 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                             ),
-
                             title: Text(
                               room.name,
                               style: const TextStyle(
@@ -388,11 +383,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return NavbarLayout(user: widget.user, homeContent: _buildHomeContent());
+    // Gunakan listen: true (default) supaya HomePage rebuild saat user berubah
+    final user = Provider.of<UserProvider>(context).user!;
+    return NavbarLayout(
+      homeContentBuilder: (_) => _buildHomeContent(),
+      user: user,
+    );
   }
 }
 
-// Extension untuk capitalize
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";

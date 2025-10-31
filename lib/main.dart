@@ -9,8 +9,6 @@ import 'pages/register_page.dart';
 import 'pages/home_page.dart';
 import 'pages/kalender_page.dart';
 import 'pages/profile_page.dart';
-import 'models/user_model.dart';
-import 'services/auth_service.dart';
 import 'providers/user_provider.dart';
 
 void main() async {
@@ -23,7 +21,10 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(
+          create: (_) => UserProvider()..loadUser(),
+          lazy: false,
+        ),
       ],
       child: const MyApp(),
     ),
@@ -77,32 +78,12 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const KalenderPage());
 
           case '/home':
-            // Cek arguments untuk user
-            final args = settings.arguments;
-            if (args is UserModel) {
-              return MaterialPageRoute(builder: (_) => HomePage(user: args));
-            }
-            return _unauthorizedRoute();
+            return MaterialPageRoute(builder: (_) => const HomePage());
 
           default:
             return MaterialPageRoute(builder: (_) => const SplashScreen());
         }
       },
-    );
-  }
-
-  /// 🔒 Halaman fallback jika argumen user tidak valid
-  MaterialPageRoute _unauthorizedRoute() {
-    return MaterialPageRoute(
-      builder: (_) => const Scaffold(
-        body: Center(
-          child: Text(
-            'Akses tidak valid! Silakan login terlebih dahulu.',
-            style: TextStyle(fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -123,12 +104,17 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.loadUser();
+    
+    if (userProvider.user == null) {
+      await userProvider.loadUser();
+    }
 
     if (mounted) {
       if (userProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/home', arguments: userProvider.user);
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
         Navigator.pushReplacementNamed(context, '/login');
       }

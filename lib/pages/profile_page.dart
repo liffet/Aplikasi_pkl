@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import '../models/user_model.dart';
 import '../models/damage_report_model.dart';
 import '../services/damage_report_service.dart';
 import '../services/auth_service.dart';
-import '../providers/user_provider.dart';
 import 'edit_password_page.dart';
 import 'edit_profile_page.dart';
 import 'login_page.dart';
@@ -22,11 +22,29 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late UserModel currentUser;
+  final AuthService _authService = AuthService();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
+    _loadUserData();
+  }
+
+  // ✅ Load data dari SharedPreferences setiap kali halaman dibuka
+  Future<void> _loadUserData() async {
+    final freshUser = await _authService.getUserData();
+    if (freshUser != null) {
+      setState(() {
+        currentUser = freshUser;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        currentUser = widget.user;
+        _isLoading = false;
+      });
+    }
   }
 
   void _handleProfileUpdate(UserModel updatedUser) {
@@ -37,6 +55,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Tampilkan loading saat fetch data
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
+        body: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF3949AB)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
@@ -176,7 +204,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         );
                         if (result != null && result is UserModel) {
-                          _handleProfileUpdate(result);
+                          // reload lokal
+                          await _loadUserData();
+                          // beri tahu Provider untuk memuat ulang dan notifyListeners
+                          await Provider.of<UserProvider>(
+                            context,
+                            listen: false,
+                          ).forceRefreshUser();
+                          // callback opsional
                           widget.onProfileUpdate?.call(result);
                         }
                       },
@@ -243,13 +278,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       isFirst: true,
                       onTap: () async {
                         final service = DamageReportService();
-                        final authService = AuthService();
-                        final token = await authService.getToken();
+                        final token = await _authService.getToken();
 
                         if (token == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Token tidak ditemukan. Silakan login ulang.'),
+                              content: Text(
+                                'Token tidak ditemukan. Silakan login ulang.',
+                              ),
                             ),
                           );
                           return;
@@ -310,7 +346,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Bisa klik luar untuk batal
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -376,7 +412,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(context);
-                          final userProvider = Provider.of<UserProvider>(context, listen: false);
+                          final userProvider = Provider.of<UserProvider>(
+                            context,
+                            listen: false,
+                          );
                           await userProvider.logout();
                           Navigator.pushAndRemoveUntil(
                             context,

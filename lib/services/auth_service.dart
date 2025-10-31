@@ -4,7 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  final String baseUrl = 'http://127.0.0.1:8000/api'; // ubah ke IP LAN jika di emulator/device
+  final String baseUrl = 'http://127.0.0.1:8000/api';
+
+  // ✅ CONSTANTS untuk key SharedPreferences
+  static const String _userKey = 'user_data';
+  static const String _tokenKey = 'token';
 
   // ==============================
   // REGISTER
@@ -27,12 +31,7 @@ class AuthService {
 
         if (data['user'] != null) {
           final user = UserModel.fromJson(data['user']);
-
-          // Simpan token & user ke local storage
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', user.token);
-          await prefs.setString('user', jsonEncode(data['user']));
-
+          await _saveUserData(user);
           print('✅ Registrasi berhasil. User disimpan: ${user.name}');
           return user;
         } else {
@@ -70,14 +69,8 @@ class AuthService {
 
         if (data['user'] != null) {
           final user = UserModel.fromJson(data['user']);
-
-          // Simpan token & user ke local storage
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', user.token);
-          await prefs.setString('user', jsonEncode(data['user']));
-
+          await _saveUserData(user);
           print('✅ Login berhasil. User: ${user.name}');
-          print('✅ Token tersimpan: ${user.token}');
           return user;
         } else {
           print('⚠️ Tidak ada data user dalam response login');
@@ -94,7 +87,7 @@ class AuthService {
   }
 
   // ==============================
-  // UPDATE PROFILE (FIXED)
+  // UPDATE PROFILE (FIXED & CONSISTENT)
   // ==============================
   Future<UserModel?> updateProfile({
     required String name,
@@ -102,7 +95,6 @@ class AuthService {
     required String token,
   }) async {
     try {
-      // Debug: Print token yang digunakan
       print('🔑 Token yang digunakan untuk update: $token');
       print('📧 Email baru: $email');
       print('👤 Nama baru: $name');
@@ -124,21 +116,15 @@ class AuthService {
         final data = jsonDecode(response.body);
 
         if (data['user'] != null) {
-          // Buat user model dengan token yang ada
           final updatedUserData = {
             'id': data['user']['id'],
             'name': data['user']['name'],
             'email': data['user']['email'],
-            'token': token, // gunakan token yang ada
+            'token': token,
           };
           
           final updatedUser = UserModel.fromJson(updatedUserData);
-          
-          // Simpan ke SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user', jsonEncode(updatedUserData));
-          await prefs.setString('token', token); // pastikan token tetap tersimpan
-          
+          await _saveUserData(updatedUser);
           print('✅ Profil diperbarui: ${updatedUser.name}');
           return updatedUser;
         } else {
@@ -158,6 +144,52 @@ class AuthService {
   }
 
   // ==============================
+  // PRIVATE METHOD: SIMPAN DATA USER (CONSISTENT)
+  // ==============================
+  Future<void> _saveUserData(UserModel user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = {
+        'id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'token': user.token,
+      };
+      
+      await prefs.setString(_userKey, jsonEncode(userData));
+      await prefs.setString(_tokenKey, user.token);
+      
+      print('✅ Data user tersimpan: ${user.name}');
+    } catch (e) {
+      print('❌ Error saving user data: $e');
+    }
+  }
+
+  // ==============================
+  // GET USER DATA (CONSISTENT)
+  // ==============================
+  Future<UserModel?> getUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_userKey);
+      
+      if (jsonString == null) {
+        print('❌ Tidak ada data user di SharedPreferences');
+        return null;
+      }
+      
+      final userData = jsonDecode(jsonString);
+      final user = UserModel.fromJson(userData);
+      
+      print('✅ Data user diambil: ${user.name}');
+      return user;
+    } catch (e) {
+      print('❌ Error getting user data: $e');
+      return null;
+    }
+  }
+
+  // ==============================
   // CHANGE PASSWORD
   // ==============================
   Future<Map<String, dynamic>> changePassword({
@@ -167,8 +199,6 @@ class AuthService {
     required String token,
   }) async {
     try {
-      print('🔑 Token yang digunakan untuk change password: $token');
-      
       final response = await http.post(
         Uri.parse('$baseUrl/user/change-password'),
         headers: {
@@ -183,38 +213,30 @@ class AuthService {
         }),
       );
 
-      print('📊 Status Code: ${response.statusCode}');
-      print('📝 Response change password: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('✅ Password berhasil diubah');
 
-        // Check if new token is provided (in case backend invalidates old token)
         if (data['token'] != null) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', data['token']);
+          await prefs.setString(_tokenKey, data['token']);
           print('✅ Token diperbarui setelah ganti password');
         }
 
         return {'success': true, 'message': data['message'] ?? 'Password berhasil diubah'};
       } else if (response.statusCode == 422) {
-        // Validation error
         final data = jsonDecode(response.body);
         String errorMessage = 'Gagal mengubah password';
 
         if (data['errors'] != null) {
-          // Ambil error pertama
           final errors = data['errors'] as Map<String, dynamic>;
           errorMessage = errors.values.first[0];
         } else if (data['message'] != null) {
           errorMessage = data['message'];
         }
 
-        print('⚠️ Validation error: $errorMessage');
         return {'success': false, 'message': errorMessage};
       } else if (response.statusCode == 401) {
-        print('❌ Password lama salah atau token tidak valid');
         return {'success': false, 'message': 'Password lama salah'};
       } else {
         final data = jsonDecode(response.body);
@@ -230,14 +252,14 @@ class AuthService {
   // LOGOUT
   // ==============================
   Future<void> logout() async {
-    // Hapus data lokal untuk logout
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user');
-    print('✅ Logout berhasil, data user & token dihapus');
-
-    // Note: Backend logout endpoint belum diimplementasi dengan benar
-    // Token akan expired secara otomatis di backend
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_userKey);
+      await prefs.remove(_tokenKey);
+      print('✅ Logout berhasil, data user & token dihapus');
+    } catch (e) {
+      print('❌ Error during logout: $e');
+    }
   }
 
   // ==============================
@@ -245,7 +267,7 @@ class AuthService {
   // ==============================
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString(_tokenKey);
     return token != null && token.isNotEmpty;
   }
 
@@ -254,27 +276,6 @@ class AuthService {
   // ==============================
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
-
-  // ==============================
-  // SIMPAN DAN AMBIL DATA USER
-  // ==============================
-  Future<void> saveUserData(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user', jsonEncode({
-      'id': user.id,
-      'name': user.name,
-      'email': user.email,
-      'token': user.token,
-    }));
-    print('✅ Data user tersimpan: ${user.name}');
-  }
-
-  Future<UserModel?> getUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('user');
-    if (jsonString == null) return null;
-    return UserModel.fromJson(jsonDecode(jsonString));
+    return prefs.getString(_tokenKey);
   }
 }
