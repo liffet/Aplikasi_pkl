@@ -5,6 +5,7 @@ class DamageReport {
   final String status;
   final String? itemCode; // kode barang
   final String? itemName; // nama barang
+  final String? photo; // foto laporan
   final DateTime? createdAt;
 
   DamageReport({
@@ -14,6 +15,7 @@ class DamageReport {
     required this.status,
     this.itemCode,
     this.itemName,
+    this.photo,
     this.createdAt,
   });
 
@@ -23,8 +25,9 @@ class DamageReport {
       itemId: json['item_id'] ?? 0,
       reason: json['reason'] ?? '',
       status: json['status'] ?? 'pending',
-      itemCode: json['item_code'], // ambil dari API
-      itemName: json['item_name'], // ambil dari API
+      itemCode: json['item_code'],
+      itemName: json['item_name'],
+      photo: json['photo'], // ambil dari API Laravel
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
@@ -36,6 +39,7 @@ class DamageReport {
       'item_id': itemId,
       'reason': reason,
       'status': status,
+      'photo': photo, // tambahkan foto saat dikirim ke API
     };
   }
 }
