@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16),
 
-              // Horizontal Floor Selector
+              // Horizontal Floor Selector - FIXED VERSION
               SizedBox(
                 height: 90,
                 child: _floors.isEmpty
@@ -200,19 +200,26 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    floor.name.replaceAll('Lantai ', ''),
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? Colors.indigo
-                                          : Colors.black87,
+                                  Flexible(
+                                    child: Text(
+                                      floor.name.replaceAll('Lantai ', ''),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected
+                                            ? Colors.indigo
+                                            : Colors.black87,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Lantai',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: isSelected
