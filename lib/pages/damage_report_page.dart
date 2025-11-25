@@ -21,6 +21,10 @@ class DamageReportPage extends StatefulWidget {
 class _DamageReportPageState extends State<DamageReportPage> {
   final TextEditingController _reasonController = TextEditingController();
   bool _isLoading = false;
+  
+  // State untuk validasi
+  String? _validationMessage;
+  IconData? _validationIcon;
 
   // untuk menyimpan foto
   Uint8List? _webImageBytes;
@@ -40,6 +44,11 @@ class _DamageReportPageState extends State<DamageReportPage> {
       if (picked != null) {
         setState(() {
           _fileName = picked.name;
+          // Clear validation saat user memilih foto
+          if (_validationMessage != null) {
+            _validationMessage = null;
+            _validationIcon = null;
+          }
         });
 
         if (kIsWeb) {
@@ -166,21 +175,75 @@ class _DamageReportPageState extends State<DamageReportPage> {
     });
   }
 
+  // 🔹 Alert untuk form tidak lengkap (inline banner)
+  Widget _buildValidationBanner(String message, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 255, 223, 223),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color.fromARGB(255, 255, 120, 120),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: const Color.fromARGB(255, 184, 0, 0),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 14,
+                color: const Color.fromARGB(255, 230, 0, 0),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 🔹 kirim laporan
   Future<void> _submitReport() async {
-    if (_reasonController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alasan kerusakan tidak boleh kosong')),
-      );
+    // Validasi alasan
+    if (_reasonController.text.trim().isEmpty) {
+      setState(() {
+        _validationMessage = 'Silakan jelaskan alasan kerusakan perangkat secara detail agar laporan dapat diproses dengan baik.';
+        _validationIcon = Icons.edit_note_rounded;
+      });
       return;
     }
 
+    // Validasi foto
     if ((!kIsWeb && _pickedFile == null) || (kIsWeb && _webImageBytes == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan pilih foto bukti kerusakan')),
-      );
+      setState(() {
+        _validationMessage = 'Foto bukti kerusakan diperlukan untuk memverifikasi kondisi perangkat. Silakan tambahkan foto terlebih dahulu.';
+        _validationIcon = Icons.add_photo_alternate_rounded;
+      });
       return;
     }
+
+    // Clear validation jika semua sudah terisi
+    setState(() {
+      _validationMessage = null;
+      _validationIcon = null;
+    });
 
     setState(() => _isLoading = true);
 
@@ -367,6 +430,13 @@ class _DamageReportPageState extends State<DamageReportPage> {
               padding: const EdgeInsets.only(top: 16),
               child: Column(
                 children: [
+                  // 🔹 Validation Banner (jika ada)
+                  if (_validationMessage != null && _validationIcon != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildValidationBanner(_validationMessage!, _validationIcon!),
+                    ),
+                  
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -395,6 +465,15 @@ class _DamageReportPageState extends State<DamageReportPage> {
                         TextField(
                           controller: _reasonController,
                           maxLines: 5,
+                          onChanged: (value) {
+                            // Clear validation saat user mulai mengetik
+                            if (_validationMessage != null && value.isNotEmpty) {
+                              setState(() {
+                                _validationMessage = null;
+                                _validationIcon = null;
+                              });
+                            }
+                          },
                           decoration: InputDecoration(
                             hintText: 'Silahkan mengisi alasan disini...',
                             hintStyle: TextStyle(
