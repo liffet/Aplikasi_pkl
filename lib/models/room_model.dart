@@ -1,4 +1,4 @@
-import 'floor_model.dart';
+import 'package:flutter_application_1/models/floor_model.dart';
 
 class RoomModel {
   final int id;
@@ -12,6 +12,11 @@ class RoomModel {
     required this.floorId,
     this.floor,
   });
+
+  // → getter buildingId
+  int get buildingId {
+    return floor?.buildingId ?? 0;
+  }
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
     return RoomModel(
@@ -29,7 +34,7 @@ class RoomModel {
       'id': id,
       'name': name,
       'floor_id': floorId,
-      'floor': floor?.toJson(), // ✅ pastikan FloorModel punya toJson()
+      'floor': floor?.toJson(),
     };
   }
 }

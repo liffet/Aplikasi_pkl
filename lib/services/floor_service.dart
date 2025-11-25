@@ -6,9 +6,8 @@ import '../models/floor_model.dart';
 class FloorService {
   final String baseUrl = 'http://127.0.0.1:8000/api';
 
-  Future<List<FloorModel>> getFloors() async {
+  Future<List<FloorModel>> getFloors(int buildingId) async {
     try {
-      // 🔹 Ambil token dari SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
@@ -16,30 +15,27 @@ class FloorService {
         throw Exception('Token tidak ditemukan. Silakan login dulu.');
       }
 
-      // 🔹 Kirim request GET dengan Authorization header
       final response = await http.get(
-        Uri.parse('$baseUrl/floors'),
+        Uri.parse('$baseUrl/floors?building_id=$buildingId'),
         headers: {
           'Accept': 'application/json',
-          'Authorization': 'Bearer $token', // 🔥 penting!
+          'Authorization': 'Bearer $token',
         },
       );
 
       print('Response Floors: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final body = json.decode(response.body);
+      final body = json.decode(response.body);
 
+      if (response.statusCode == 200) {
         if (body['success'] == true && body['data'] != null) {
           final List<dynamic> data = body['data'];
           return data.map((e) => FloorModel.fromJson(e)).toList();
         } else {
-          throw Exception('Data lantai kosong atau format salah');
+          return []; // 🟦 Kembalikan list kosong jika tidak ada lantai
         }
-      } else if (response.statusCode == 401) {
-        throw Exception('Token tidak valid atau sudah kedaluwarsa.');
       } else {
-        throw Exception('Gagal memuat data lantai (Status: ${response.statusCode})');
+        throw Exception(body['message'] ?? 'Gagal memuat lantai');
       }
     } catch (e) {
       throw Exception('Error mengambil data lantai: $e');

@@ -31,7 +31,6 @@ class _PerangkatPageState extends State<PerangkatPage> {
     try {
       final data = await _itemService.getItems();
 
-      // Filter item berdasarkan ID ruangan
       setState(() {
         _items = data.where((item) => item.roomId == widget.room.id).toList();
       });
@@ -74,13 +73,12 @@ class _PerangkatPageState extends State<PerangkatPage> {
         children: [
           SafeArea(
             child: Container(
-              height: 80, // tinggi AppBar custom
+              height: 80,
               color: Colors.white,
               child: Stack(
                 children: [
-                  // Back button di kiri dengan padding sama seperti konten
                   Positioned(
-                    left: 5, // sama dengan padding konten
+                    left: 5,
                     top: 0,
                     bottom: 0,
                     child: IconButton(
@@ -92,7 +90,6 @@ class _PerangkatPageState extends State<PerangkatPage> {
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
-                  // Nama ruangan di tengah
                   Center(
                     child: Text(
                       widget.room.name,
@@ -110,12 +107,10 @@ class _PerangkatPageState extends State<PerangkatPage> {
             ),
           ),
 
-          // Konten halaman
+          // Body
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(
-                20,
-              ), // sama dengan left: 20 tombol back
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -137,12 +132,9 @@ class _PerangkatPageState extends State<PerangkatPage> {
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.transparent, // background transparan
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(
-                        color: Colors.grey.withOpacity(
-                          0.5,
-                        ), // border tipis dan transparan
+                        color: Colors.grey.withOpacity(0.5),
                         width: 1.5,
                       ),
                     ),
@@ -233,23 +225,22 @@ class _PerangkatPageState extends State<PerangkatPage> {
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
-                                      item.category ?? 'Tanpa Kategori',
+                                      item.category?.name ?? 'Tanpa Kategori',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 13,
                                       ),
                                     ),
                                   ),
+
                                   trailing: Text(
                                     formatDate(item.replacementDate),
-                                    style: TextStyle(
-                                      color: const Color.fromARGB(255, 0, 0, 0),
+                                    style: const TextStyle(
+                                      color: Colors.black,
                                       fontSize: 13,
-                                      fontWeight:
-                                          FontWeight.bold, // buat teks bold
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-
                                   onTap: () {
                                     Navigator.push(
                                       context,

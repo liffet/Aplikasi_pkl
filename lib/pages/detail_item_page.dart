@@ -68,7 +68,7 @@ class DetailItemPage extends StatelessWidget {
             _buildDivider(),
             _buildInfoRow('NAMA', item.name, false),
             _buildDivider(),
-            _buildInfoRow('KATEGORI', item.category ?? '-', false),
+            _buildInfoRow('KATEGORI', item.category?.name ?? '-', false),
             _buildDivider(),
             _buildInfoRow('RUANGAN', item.room?.name ?? '-', false),
             _buildDivider(),

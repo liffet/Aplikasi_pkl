@@ -189,7 +189,7 @@ class _KalenderPageState extends State<KalenderPage> {
               ),
             ),
     );
-  }
+  } 
 
   // ---------------- UI SECTIONS ----------------
 

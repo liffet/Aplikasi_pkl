@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../services/room_service.dart';
 import '../services/floor_service.dart';
+import '../services/building_service.dart';
+
 import '../models/room_model.dart';
 import '../models/floor_model.dart';
+import '../models/building_model.dart';
+
 import '../layout/navbar_layout.dart';
 import '../providers/user_provider.dart';
 import 'perangkat_page.dart';
@@ -19,96 +24,95 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final RoomService _roomService = RoomService();
   final FloorService _floorService = FloorService();
+  final BuildingService _buildingService = BuildingService();
 
   List<RoomModel> _rooms = [];
   List<FloorModel> _floors = [];
+  List<Building> _buildings = [];
+
   bool _isLoading = true;
   String _errorMessage = '';
+
   DateTime _selectedDate = DateTime.now();
+  int? _selectedBuildingId;
   int? _selectedFloorId;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    fetchData();
+    fetchInitialData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (mounted) {
-      fetchData();
+  Future<void> fetchInitialData() async {
+  setState(() => _isLoading = true);
+
+  try {
+    await fetchBuildings();
+
+    if (_selectedBuildingId != null) {
+      await fetchFloors(_selectedBuildingId!);
     }
+
+    await fetchRooms();
+  } catch (e) {
+    setState(() => _errorMessage = 'Gagal memuat data: $e');
+  } finally {
+    setState(() => _isLoading = false);
   }
+}
 
-  Future<void> fetchData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
 
+  Future<void> fetchBuildings() async {
     try {
-      await fetchFloors();
-      await fetchRooms();
+      final data = await _buildingService.getBuildings();
+      setState(() {
+        _buildings = data;
+        if (_buildings.isNotEmpty && _selectedBuildingId == null) {
+          _selectedBuildingId = _buildings.first.id;
+        }
+      });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memuat data: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _errorMessage = 'Gagal memuat gedung: $e');
     }
   }
+
+  Future<void> fetchFloors(int buildingId) async {
+  try {
+    final data = await _floorService.getFloors(buildingId);
+    setState(() {
+      _floors = data;
+      if (_floors.isNotEmpty) {
+        _selectedFloorId = _floors.first.id;
+      }
+    });
+  } catch (e) {
+    setState(() => _errorMessage = 'Gagal memuat lantai: $e');
+  }
+}
+
 
   Future<void> fetchRooms() async {
     try {
       final data = await _roomService.getRooms();
-      setState(() {
-        _rooms = data;
-      });
+      setState(() => _rooms = data);
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memuat data ruangan: $e';
-      });
-    }
-  }
-
-  Future<void> fetchFloors() async {
-    try {
-      final data = await _floorService.getFloors();
-      setState(() {
-        _floors = data;
-        if (_floors.isNotEmpty && _selectedFloorId == null) {
-          _selectedFloorId = _floors.first.id;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memuat data lantai: $e';
-      });
+      setState(() => _errorMessage = 'Gagal memuat ruangan: $e');
     }
   }
 
   Widget _buildHomeContent() {
-    final userProvider = Provider.of<UserProvider>(context);
-    final currentUser = userProvider.user;
+    final user = Provider.of<UserProvider>(context).user;
 
-    final formattedDate = DateFormat(
-      'd MMMM yyyy',
-      'id_ID',
-    ).format(_selectedDate);
+    final formattedDate = DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate);
 
-    final filteredRooms = _rooms
-        .where(
-          (room) =>
-              (_selectedFloorId == null || room.floorId == _selectedFloorId) &&
-              (room.name.toLowerCase().contains(_searchQuery.toLowerCase())),
-        )
-        .toList();
-
-    print('🔄 HomePage building with user: ${currentUser?.name}');
+    // FILTER RUANGAN
+    final filteredRooms = _rooms.where((room) {
+      final matchBuilding = _selectedBuildingId == null || room.buildingId == _selectedBuildingId;
+      final matchFloor = _selectedFloorId == null || room.floor?.id == _selectedFloorId;
+      final matchSearch = room.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchBuilding && matchFloor && matchSearch;
+    }).toList();
 
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -117,58 +121,106 @@ class _HomePageState extends State<HomePage> {
     if (_errorMessage.isNotEmpty) {
       return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(_errorMessage),
-            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: fetchData,
-              child: const Text('Coba Lagi'),
-            ),
+              onPressed: fetchInitialData,
+              child: const Text("Coba Lagi"),
+            )
           ],
         ),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await Provider.of<UserProvider>(context, listen: false).loadUser();
-        await fetchData();
-      },
+      onRefresh: fetchInitialData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Greeting
               Text(
-                'Selamat Datang, ${currentUser?.name ?? "User"}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                "Selamat Datang, ${user?.name ?? "User"}",
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
-              // Tanggal
               Text(
                 formattedDate,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
 
-              // Horizontal Floor Selector - FIXED VERSION
+              // =========================================================
+              // 🔵 SELECT BUILDING (HORIZONTAL)
+              // =========================================================
+              const Text(
+                "Pilih Gedung",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+
+              SizedBox(
+                height: 90,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _buildings.length,
+                  itemBuilder: (context, index) {
+                    final building = _buildings[index];
+                    final isSelected = building.id == _selectedBuildingId;
+
+                    return GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          _selectedBuildingId = building.id;
+                          _floors = [];
+                          _selectedFloorId = null;
+                          _isLoading = true;
+                        });
+
+                        await fetchFloors(_selectedBuildingId!);
+
+                        setState(() => _isLoading = false);
+                      },
+                      child: Container(
+                        width: 120,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.indigo.shade50 : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? Colors.indigo : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            building.name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.indigo : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // =========================================================
+              // 🔵 SELECT FLOOR (TETAP DESAIN LAMA)
+              // =========================================================
               SizedBox(
                 height: 90,
                 child: _floors.isEmpty
-                    ? const Center(child: Text('Belum ada data lantai'))
+                    ? const Center(child: Text("Belum ada data lantai"))
                     : ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _floors.length,
@@ -178,55 +230,36 @@ class _HomePageState extends State<HomePage> {
 
                           return GestureDetector(
                             onTap: () {
-                              setState(() {
-                                _selectedFloorId = floor.id;
-                              });
+                              setState(() => _selectedFloorId = floor.id);
                             },
                             child: Container(
                               width: 80,
                               margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.indigo.shade50
-                                    : Colors.white,
+                                color: isSelected ? Colors.indigo.shade50 : Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? Colors.indigo
-                                      : Colors.grey.shade300,
+                                  color: isSelected ? Colors.indigo : Colors.grey.shade300,
                                   width: isSelected ? 2 : 1,
                                 ),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      floor.name.replaceAll('Lantai ', ''),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected
-                                            ? Colors.indigo
-                                            : Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
                                   Text(
-                                    'Lantai',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    floor.name.replaceAll("Lantai ", ""),
                                     style: TextStyle(
-                                      fontSize: 13,
-                                      color: isSelected
-                                          ? Colors.indigo
-                                          : Colors.grey.shade600,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.indigo : Colors.black87,
                                     ),
                                   ),
+                                  Text(
+                                    "Lantai",
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.indigo : Colors.grey.shade600,
+                                    ),
+                                  )
                                 ],
                               ),
                             ),
@@ -234,146 +267,63 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
               ),
+
               const SizedBox(height: 20),
 
-              // Search Bar
+              // =========================================================
+              // SEARCH (TETAP)
+              // =========================================================
               TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w500,
-                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
                 decoration: InputDecoration(
-                  hintText: 'Pencarian...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.grey.shade400,
-                    size: 24,
-                  ),
+                  hintText: "Pencarian...",
+                  prefixIcon: const Icon(Icons.search),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withOpacity(0.5),
-                      width: 1.5,
-                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(
-                      color: Colors.indigo,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
+
               const SizedBox(height: 24),
 
-              // Daftar Ruangan Title
               const Text(
-                'Daftar Ruangan',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                "Daftar Ruangan",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // Room List
               filteredRooms.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text('Tidak ada ruangan yang ditemukan'),
-                      ),
-                    )
+                  ? const Center(child: Text("Tidak ada ruangan"))
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredRooms.length,
                       itemBuilder: (context, index) {
                         final room = filteredRooms[index];
-                        final initial = room.name.isNotEmpty
-                            ? room.name[0].toUpperCase()
-                            : '?';
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.shade200,
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
                           child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                            tileColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            leading: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: Colors.indigo,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              alignment: Alignment.center,
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.indigo,
                               child: Text(
-                                initial,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                room.name[0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white),
                               ),
                             ),
-                            title: Text(
-                              room.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            subtitle: room.floor != null
-                                ? Text(
-                                    '${room.floor!.name}',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 14,
-                                    ),
-                                  )
-                                : null,
+                            title: Text(room.name),
+                            subtitle: Text(room.floor?.name ?? '-'),
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      PerangkatPage(room: room),
+                                  builder: (_) => PerangkatPage(room: room),
                                 ),
                               );
                             },
@@ -390,7 +340,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan listen: true (default) supaya HomePage rebuild saat user berubah
     final user = Provider.of<UserProvider>(context).user!;
     return NavbarLayout(
       homeContentBuilder: (_) => _buildHomeContent(),
@@ -398,6 +347,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
 
 extension StringExtension on String {
   String capitalize() {
