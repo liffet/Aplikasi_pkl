@@ -45,23 +45,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchInitialData() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    await fetchBuildings();
+    try {
+      await fetchBuildings();
 
-    if (_selectedBuildingId != null) {
-      await fetchFloors(_selectedBuildingId!);
+      if (_selectedBuildingId != null) {
+        await fetchFloors(_selectedBuildingId!);
+      }
+
+      await fetchRooms();
+    } catch (e) {
+      setState(() => _errorMessage = 'Gagal memuat data: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    await fetchRooms();
-  } catch (e) {
-    setState(() => _errorMessage = 'Gagal memuat data: $e');
-  } finally {
-    setState(() => _isLoading = false);
   }
-}
-
 
   Future<void> fetchBuildings() async {
     try {
@@ -78,19 +77,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchFloors(int buildingId) async {
-  try {
-    final data = await _floorService.getFloors(buildingId);
-    setState(() {
-      _floors = data;
-      if (_floors.isNotEmpty) {
-        _selectedFloorId = _floors.first.id;
-      }
-    });
-  } catch (e) {
-    setState(() => _errorMessage = 'Gagal memuat lantai: $e');
+    try {
+      final data = await _floorService.getFloors(buildingId);
+      setState(() {
+        _floors = data;
+        if (_floors.isNotEmpty) {
+          _selectedFloorId = _floors.first.id;
+        }
+      });
+    } catch (e) {
+      setState(() => _errorMessage = 'Gagal memuat lantai: $e');
+    }
   }
-}
-
 
   Future<void> fetchRooms() async {
     try {
@@ -148,34 +146,76 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-              Text(
-                formattedDate,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    formattedDate,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // =========================================================
-              // 🔵 SELECT BUILDING (HORIZONTAL)
+              // 🔵 DROPDOWN GEDUNG
               // =========================================================
-              const Text(
-                "Pilih Gedung",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-
-              SizedBox(
-                height: 90,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _buildings.length,
-                  itemBuilder: (context, index) {
-                    final building = _buildings[index];
-                    final isSelected = building.id == _selectedBuildingId;
-
-                    return GestureDetector(
-                      onTap: () async {
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    isExpanded: true,
+                    value: _selectedBuildingId,
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Colors.indigo),
+                    hint: const Text(
+                      "Pilih Gedung",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    items: _buildings.map((building) {
+                      return DropdownMenuItem<int>(
+                        value: building.id,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.business,
+                                size: 18,
+                                color: Colors.indigo,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(building.name),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) async {
+                      if (value != null) {
                         setState(() {
-                          _selectedBuildingId = building.id;
+                          _selectedBuildingId = value;
                           _floors = [];
                           _selectedFloorId = null;
                           _isLoading = true;
@@ -184,39 +224,23 @@ class _HomePageState extends State<HomePage> {
                         await fetchFloors(_selectedBuildingId!);
 
                         setState(() => _isLoading = false);
-                      },
-                      child: Container(
-                        width: 120,
-                        margin: const EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.indigo.shade50 : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? Colors.indigo : Colors.grey.shade300,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            building.name,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.indigo : Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                      }
+                    },
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // =========================================================
-              // 🔵 SELECT FLOOR (TETAP DESAIN LAMA)
+              // 🔵 SELECT FLOOR (HORIZONTAL)
               // =========================================================
+              const Text(
+                "Pilih Lantai",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 12),
+              
               SizedBox(
                 height: 90,
                 child: _floors.isEmpty
@@ -236,12 +260,21 @@ class _HomePageState extends State<HomePage> {
                               width: 80,
                               margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.indigo.shade50 : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                color: isSelected ? Colors.indigo : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected ? Colors.indigo : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
+                                  width: 2,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isSelected 
+                                        ? Colors.indigo.withOpacity(0.3)
+                                        : Colors.black.withOpacity(0.05),
+                                    blurRadius: isSelected ? 8 : 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -249,15 +282,18 @@ class _HomePageState extends State<HomePage> {
                                   Text(
                                     floor.name.replaceAll("Lantai ", ""),
                                     style: TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 28,
                                       fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.indigo : Colors.black87,
+                                      color: isSelected ? Colors.white : Colors.indigo,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     "Lantai",
                                     style: TextStyle(
-                                      color: isSelected ? Colors.indigo : Colors.grey.shade600,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isSelected ? Colors.white70 : Colors.grey.shade600,
                                     ),
                                   )
                                 ],
@@ -271,17 +307,39 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 20),
 
               // =========================================================
-              // SEARCH (TETAP)
+              // SEARCH
               // =========================================================
-              TextField(
-                onChanged: (value) => setState(() => _searchQuery = value),
-                decoration: InputDecoration(
-                  hintText: "Pencarian...",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: "Cari ruangan...",
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.indigo, width: 2),
+                    ),
                   ),
                 ),
               ),
@@ -292,10 +350,29 @@ class _HomePageState extends State<HomePage> {
                 "Daftar Ruangan",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               filteredRooms.isEmpty
-                  ? const Center(child: Text("Tidak ada ruangan"))
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(Icons.meeting_room_outlined, 
+                                size: 64, 
+                                color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Tidak ada ruangan",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -305,20 +382,65 @@ class _HomePageState extends State<HomePage> {
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
                           child: ListTile(
-                            tileColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.indigo,
-                              child: Text(
-                                room.name[0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                               color: Colors.indigo,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  room.name[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                            title: Text(room.name),
-                            subtitle: Text(room.floor?.name ?? '-'),
+                            title: Text(
+                              room.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                            subtitle: Row(
+                              children: [
+                                Icon(Icons.layers, size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  room.floor?.name ?? '-',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Colors.grey.shade400,
+                            ),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -347,7 +469,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
 
 extension StringExtension on String {
   String capitalize() {
