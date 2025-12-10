@@ -104,6 +104,7 @@ class _HomePageState extends State<HomePage> {
 
     final formattedDate = DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate);
 
+    // Filter ruangan
     final filteredRooms = _rooms.where((room) {
       final matchBuilding = _selectedBuildingId == null || room.buildingId == _selectedBuildingId;
       final matchFloor = _selectedFloorId == null || room.floor?.id == _selectedFloorId;
@@ -118,10 +119,26 @@ class _HomePageState extends State<HomePage> {
     if (_errorMessage.isNotEmpty) {
       return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_errorMessage),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: fetchInitialData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text("Coba Lagi"),
             )
           ],
@@ -131,6 +148,7 @@ class _HomePageState extends State<HomePage> {
 
     return RefreshIndicator(
       onRefresh: fetchInitialData,
+      color: Colors.indigo,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
@@ -138,12 +156,18 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header - Greeting
               Text(
                 "Selamat Datang, ${user?.name ?? "User"}",
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
 
+              // Date
               Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
@@ -155,26 +179,74 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+
+              // Dropdown Gedung
               const Text(
                 "Pilih Gedung",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              SizedBox(
-                height: 90,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _buildings.length,
-                  itemBuilder: (context, index) {
-                    final building = _buildings[index];
-                    final isSelected = building.id == _selectedBuildingId;
-
-                    return GestureDetector(
-                      onTap: () async {
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    isExpanded: true,
+                    value: _selectedBuildingId,
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Colors.indigo),
+                    hint: const Text(
+                      "Pilih Gedung",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    items: _buildings.map((building) {
+                      return DropdownMenuItem<int>(
+                        value: building.id,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.business,
+                                size: 20,
+                                color: Colors.indigo,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(building.name),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) async {
+                      if (value != null) {
                         setState(() {
-                          _selectedBuildingId = building.id;
+                          _selectedBuildingId = value;
                           _floors = [];
                           _selectedFloorId = null;
                           _isLoading = true;
@@ -183,40 +255,37 @@ class _HomePageState extends State<HomePage> {
                         await fetchFloors(_selectedBuildingId!);
 
                         setState(() => _isLoading = false);
-                      },
-                      child: Container(
-                        width: 120,
-                        margin: const EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.indigo.shade50 : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? Colors.indigo : Colors.grey.shade300,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            building.name,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.indigo : Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                      }
+                    },
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+
+              // Pilih Lantai
+              const Text(
+                "Pilih Lantai",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
 
               SizedBox(
-                height: 90,
+                height: 100,
                 child: _floors.isEmpty
-                    ? const Center(child: Text("Belum ada data lantai"))
+                    ? Center(
+                        child: Text(
+                          "Belum ada data lantai",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
                     : ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _floors.length,
@@ -229,15 +298,31 @@ class _HomePageState extends State<HomePage> {
                               setState(() => _selectedFloorId = floor.id);
                             },
                             child: Container(
-                              width: 80,
+                              width: 85,
                               margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.indigo.shade50 : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                gradient: isSelected
+                                    ? const LinearGradient(
+                                        colors: [Colors.indigo, Color(0xFF5C6BC0)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                                color: isSelected ? null : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected ? Colors.indigo : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
+                                  width: 2,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isSelected
+                                        ? Colors.indigo.withOpacity(0.3)
+                                        : Colors.black.withOpacity(0.05),
+                                    blurRadius: isSelected ? 12 : 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -245,15 +330,18 @@ class _HomePageState extends State<HomePage> {
                                   Text(
                                     floor.name.replaceAll("Lantai ", ""),
                                     style: TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 32,
                                       fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.indigo : Colors.black87,
+                                      color: isSelected ? Colors.white : Colors.indigo,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     "Lantai",
                                     style: TextStyle(
-                                      color: isSelected ? Colors.indigo : Colors.grey.shade600,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isSelected ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
                                     ),
                                   )
                                 ],
@@ -264,31 +352,90 @@ class _HomePageState extends State<HomePage> {
                       ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              TextField(
-                onChanged: (value) => setState(() => _searchQuery = value),
-                decoration: InputDecoration(
-                  hintText: "Pencarian...",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+              // Search Field
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: "Cari ruangan...",
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 22),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.indigo, width: 2),
+                    ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
+              // Daftar Ruangan Header
               const Text(
                 "Daftar Ruangan",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
+              // Room List
               filteredRooms.isEmpty
-                  ? const Center(child: Text("Tidak ada ruangan"))
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.meeting_room_outlined,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Tidak ada ruangan",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Coba pilih gedung atau lantai lain",
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -298,20 +445,80 @@ class _HomePageState extends State<HomePage> {
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
                           child: ListTile(
-                            tileColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
                             ),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.indigo,
-                              child: Text(
-                                room.name[0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white),
+                            leading: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.indigo, Color(0xFF5C6BC0)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  room.name[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                            title: Text(room.name),
-                            subtitle: Text(room.floor?.name ?? '-'),
+                            title: Text(
+                              room.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.layers, size: 14, color: Colors.grey.shade500),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    room.floor?.name ?? '-',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.indigo,
+                              ),
+                            ),
                             onTap: () {
                               Navigator.push(
                                 context,
