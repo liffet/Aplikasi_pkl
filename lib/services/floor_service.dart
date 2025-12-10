@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/floor_model.dart';
+import '../config/api_config.dart'; // ⬅️ Tambahkan ini
 
 class FloorService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
+  // Ganti hardcode dgn ApiConfig
+  final String baseUrl = ApiConfig.baseUrl;
 
   Future<List<FloorModel>> getFloors(int buildingId) async {
     try {
@@ -32,7 +35,7 @@ class FloorService {
           final List<dynamic> data = body['data'];
           return data.map((e) => FloorModel.fromJson(e)).toList();
         } else {
-          return []; // 🟦 Kembalikan list kosong jika tidak ada lantai
+          return []; // ⬅️ tetap sama
         }
       } else {
         throw Exception(body['message'] ?? 'Gagal memuat lantai');

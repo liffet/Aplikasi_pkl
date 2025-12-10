@@ -45,23 +45,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchInitialData() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    await fetchBuildings();
+    try {
+      await fetchBuildings();
 
-    if (_selectedBuildingId != null) {
-      await fetchFloors(_selectedBuildingId!);
+      if (_selectedBuildingId != null) {
+        await fetchFloors(_selectedBuildingId!);
+      }
+
+      await fetchRooms();
+    } catch (e) {
+      setState(() => _errorMessage = 'Gagal memuat data: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    await fetchRooms();
-  } catch (e) {
-    setState(() => _errorMessage = 'Gagal memuat data: $e');
-  } finally {
-    setState(() => _isLoading = false);
   }
-}
-
 
   Future<void> fetchBuildings() async {
     try {
@@ -78,19 +77,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchFloors(int buildingId) async {
-  try {
-    final data = await _floorService.getFloors(buildingId);
-    setState(() {
-      _floors = data;
-      if (_floors.isNotEmpty) {
-        _selectedFloorId = _floors.first.id;
-      }
-    });
-  } catch (e) {
-    setState(() => _errorMessage = 'Gagal memuat lantai: $e');
+    try {
+      final data = await _floorService.getFloors(buildingId);
+      setState(() {
+        _floors = data;
+        if (_floors.isNotEmpty) {
+          _selectedFloorId = _floors.first.id;
+        }
+      });
+    } catch (e) {
+      setState(() => _errorMessage = 'Gagal memuat lantai: $e');
+    }
   }
-}
-
 
   Future<void> fetchRooms() async {
     try {
@@ -106,7 +104,6 @@ class _HomePageState extends State<HomePage> {
 
     final formattedDate = DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate);
 
-    // FILTER RUANGAN
     final filteredRooms = _rooms.where((room) {
       final matchBuilding = _selectedBuildingId == null || room.buildingId == _selectedBuildingId;
       final matchFloor = _selectedFloorId == null || room.floor?.id == _selectedFloorId;
@@ -141,7 +138,6 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Greeting
               Text(
                 "Selamat Datang, ${user?.name ?? "User"}",
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -154,9 +150,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16),
 
-              // =========================================================
-              // 🔵 SELECT BUILDING (HORIZONTAL)
-              // =========================================================
               const Text(
                 "Pilih Gedung",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -214,9 +207,6 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
 
-              // =========================================================
-              // 🔵 SELECT FLOOR (TETAP DESAIN LAMA)
-              // =========================================================
               SizedBox(
                 height: 90,
                 child: _floors.isEmpty
@@ -270,9 +260,6 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
 
-              // =========================================================
-              // SEARCH (TETAP)
-              // =========================================================
               TextField(
                 onChanged: (value) => setState(() => _searchQuery = value),
                 decoration: InputDecoration(
@@ -340,14 +327,20 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context).user!;
+    final user = Provider.of<UserProvider>(context).user;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return NavbarLayout(
       homeContentBuilder: (_) => _buildHomeContent(),
       user: user,
     );
   }
 }
-
 
 extension StringExtension on String {
   String capitalize() {

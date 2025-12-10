@@ -4,9 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/building_model.dart';
 import '../models/floor_model.dart';
+import '../config/api_config.dart';
 
 class BuildingService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
+  // ✅ Gunakan ApiConfig.baseUrl (bukan finalBaseUrl)
+  String get _baseUrl => ApiConfig.baseUrl;
 
   // ==================================================
   // 1️⃣ GET Semua Building
@@ -21,7 +23,7 @@ class BuildingService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/buildings'),
+        Uri.parse('$_baseUrl/buildings'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
@@ -40,7 +42,9 @@ class BuildingService {
           throw Exception('Data building tidak ditemukan');
         }
       } else {
-        throw Exception('Gagal memuat daftar building (Status: ${response.statusCode})');
+        throw Exception(
+          'Gagal memuat daftar building (Status: ${response.statusCode})',
+        );
       }
     } catch (e) {
       throw Exception('Error mengambil data building: $e');
@@ -48,7 +52,7 @@ class BuildingService {
   }
 
   // ==================================================
-  // 2️⃣ GET Floors berdasarkan Building ID
+  // 2️⃣ GET Floors by Building ID
   //     /api/buildings/{id}/floors
   // ==================================================
   Future<List<FloorModel>> getFloorsByBuilding(int buildingId) async {
@@ -61,7 +65,7 @@ class BuildingService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/buildings/$buildingId/floors'),
+        Uri.parse('$_baseUrl/buildings/$buildingId/floors'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
@@ -81,11 +85,11 @@ class BuildingService {
         }
       } else {
         throw Exception(
-            'Gagal memuat lantai untuk building ID $buildingId (Status: ${response.statusCode})');
+          'Gagal memuat lantai untuk building ID $buildingId (Status: ${response.statusCode})',
+        );
       }
     } catch (e) {
       throw Exception('Error mengambil data lantai: $e');
     }
   }
-
 }

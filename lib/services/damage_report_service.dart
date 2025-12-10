@@ -2,14 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+
 import '../models/damage_report_model.dart';
+import '../config/api_config.dart'; // ⬅️ Tambahkan ini
 
 class DamageReportService {
-  final String baseUrl = 'http://127.0.0.1:8000/api/damage-reports';
+  // Ganti hardcode dengan ApiConfig
+  final String baseUrl = '${ApiConfig.baseUrl}/damage-reports';
 
   /// 🔹 [1] Kirim laporan untuk WEB (pakai Uint8List)
   Future<bool> createReportWeb(
-      DamageReport report, String token, Uint8List webImageBytes, String fileName) async {
+    DamageReport report,
+    String token,
+    Uint8List webImageBytes,
+    String fileName,
+  ) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
       request.headers.addAll({
@@ -22,11 +29,13 @@ class DamageReportService {
       request.fields['reason'] = report.reason;
 
       // File dari bytes
-      request.files.add(http.MultipartFile.fromBytes(
-        'photo',
-        webImageBytes,
-        filename: fileName,
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          webImageBytes,
+          filename: fileName,
+        ),
+      );
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
@@ -45,7 +54,11 @@ class DamageReportService {
   }
 
   /// 🔹 [2] Kirim laporan untuk MOBILE (pakai File)
-  Future<bool> createReportMobile(DamageReport report, String token, File photo) async {
+  Future<bool> createReportMobile(
+    DamageReport report,
+    String token,
+    File photo,
+  ) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
       request.headers.addAll({
@@ -57,7 +70,9 @@ class DamageReportService {
       request.fields['reason'] = report.reason;
 
       // File dari path
-      request.files.add(await http.MultipartFile.fromPath('photo', photo.path));
+      request.files.add(
+        await http.MultipartFile.fromPath('photo', photo.path),
+      );
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);

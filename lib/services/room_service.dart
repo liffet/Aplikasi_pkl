@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/room_model.dart';
+import '../config/api_config.dart';
 
 class RoomService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
+  // ✅ Gunakan ApiConfig.baseUrl (bukan finalBaseUrl)
+  String get _baseUrl => ApiConfig.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,7 +22,7 @@ class RoomService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/rooms'),
+        Uri.parse('$_baseUrl/rooms'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
@@ -56,7 +59,7 @@ class RoomService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/rooms/$id'),
+        Uri.parse('$_baseUrl/rooms/$id'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',

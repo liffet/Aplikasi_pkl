@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/item_model.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // tambahkan dependency ini
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../config/api_config.dart'; // ⬅️ tambah ini
 
 class ItemService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
+  // Ganti baseUrl hardcode menjadi ApiConfig
+  final String baseUrl = ApiConfig.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

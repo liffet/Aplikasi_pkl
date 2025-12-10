@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/category_model.dart';
+import '../config/api_config.dart'; // ⬅️ Tambahkan ini
 
 class CategoryService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
+  // Ganti hardcode dengan ApiConfig
+  final String baseUrl = ApiConfig.baseUrl;
 
   /// 🔹 Ambil token dari SharedPreferences
   Future<String?> _getToken() async {
@@ -16,10 +19,7 @@ class CategoryService {
   Future<List<CategoryModel>> getCategories() async {
     try {
       final token = await _getToken();
-
-      if (token == null) {
-        throw Exception('Token tidak ditemukan. Silakan login ulang.');
-      }
+      if (token == null) throw Exception('Token tidak ditemukan. Silakan login ulang.');
 
       final response = await http.get(
         Uri.parse('$baseUrl/categories'),
@@ -50,7 +50,6 @@ class CategoryService {
   Future<void> addCategory(String name) async {
     try {
       final token = await _getToken();
-
       if (token == null) throw Exception('Token tidak ditemukan.');
 
       final response = await http.post(
@@ -76,7 +75,6 @@ class CategoryService {
   Future<void> updateCategory(int id, String name) async {
     try {
       final token = await _getToken();
-
       if (token == null) throw Exception('Token tidak ditemukan.');
 
       final response = await http.put(
@@ -102,7 +100,6 @@ class CategoryService {
   Future<void> deleteCategory(int id) async {
     try {
       final token = await _getToken();
-
       if (token == null) throw Exception('Token tidak ditemukan.');
 
       final response = await http.delete(

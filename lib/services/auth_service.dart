@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../config/api_config.dart';
 
 class AuthService {
-  final String baseUrl = 'http://127.0.0.1:8000/api';
-
-  // ✅ CONSTANTS untuk key SharedPreferences
+  // 🔒 CONSTANTS
   static const String _userKey = 'user_data';
   static const String _tokenKey = 'token';
+
+  // Helper untuk mendapatkan base URL
+  String get _baseUrl => ApiConfig.baseUrl;
 
   // ==============================
   // REGISTER
@@ -16,12 +18,16 @@ class AuthService {
   Future<UserModel?> register(String name, String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/register'),
+        Uri.parse('$_baseUrl/register'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password
+        }),
       );
 
       print('Response register: ${response.body}');
@@ -32,16 +38,14 @@ class AuthService {
         if (data['user'] != null) {
           final user = UserModel.fromJson(data['user']);
           await _saveUserData(user);
-          print('✅ Registrasi berhasil. User disimpan: ${user.name}');
+          print('✅ Registrasi berhasil: ${user.name}');
           return user;
-        } else {
-          print('⚠️ Tidak ada data user dalam response');
-          return null;
         }
-      } else {
-        print('❌ Gagal register: ${response.body}');
-        return null;
       }
+
+      print('❌ Gagal register: ${response.body}');
+      return null;
+
     } catch (e) {
       print('Error register: $e');
       return null;
@@ -54,7 +58,7 @@ class AuthService {
   Future<UserModel?> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('$_baseUrl/login'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -70,16 +74,13 @@ class AuthService {
         if (data['user'] != null) {
           final user = UserModel.fromJson(data['user']);
           await _saveUserData(user);
-          print('✅ Login berhasil. User: ${user.name}');
           return user;
-        } else {
-          print('⚠️ Tidak ada data user dalam response login');
-          return null;
         }
-      } else {
-        print('❌ Gagal login: ${response.body}');
-        return null;
       }
+
+      print('❌ Gagal login: ${response.body}');
+      return null;
+
     } catch (e) {
       print('Error login: $e');
       return null;
@@ -87,7 +88,7 @@ class AuthService {
   }
 
   // ==============================
-  // UPDATE PROFILE (FIXED & CONSISTENT)
+  // UPDATE PROFILE
   // ==============================
   Future<UserModel?> updateProfile({
     required String name,
@@ -95,96 +96,82 @@ class AuthService {
     required String token,
   }) async {
     try {
-      print('🔑 Token yang digunakan untuk update: $token');
-      print('📧 Email baru: $email');
-      print('👤 Nama baru: $name');
-
       final response = await http.post(
-        Uri.parse('$baseUrl/user/update'),
+        Uri.parse('$_baseUrl/user/update'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'name': name, 'email': email}),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+        }),
       );
 
-      print('📊 Status Code: ${response.statusCode}');
-      print('📝 Response update profile: ${response.body}');
+      print('Response update profile: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         if (data['user'] != null) {
-          final updatedUserData = {
+          final updatedUser = UserModel.fromJson({
             'id': data['user']['id'],
             'name': data['user']['name'],
             'email': data['user']['email'],
             'token': token,
-          };
-          
-          final updatedUser = UserModel.fromJson(updatedUserData);
+          });
+
           await _saveUserData(updatedUser);
-          print('✅ Profil diperbarui: ${updatedUser.name}');
           return updatedUser;
-        } else {
-          print('⚠️ Tidak ada data user dalam response update');
         }
-      } else if (response.statusCode == 401) {
-        print('❌ Token tidak valid atau expired. Silakan login ulang.');
-      } else {
-        print('❌ Gagal update profil: ${response.body}');
       }
 
       return null;
+
     } catch (e) {
-      print('💥 Error update profile: $e');
+      print('Error update profile: $e');
       return null;
     }
   }
 
   // ==============================
-  // PRIVATE METHOD: SIMPAN DATA USER (CONSISTENT)
+  // SAVE USER DATA
   // ==============================
   Future<void> _saveUserData(UserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userData = {
+
+      final map = {
         'id': user.id,
         'name': user.name,
         'email': user.email,
         'token': user.token,
       };
-      
-      await prefs.setString(_userKey, jsonEncode(userData));
+
+      await prefs.setString(_userKey, jsonEncode(map));
       await prefs.setString(_tokenKey, user.token);
-      
-      print('✅ Data user tersimpan: ${user.name}');
+      print('✅ Data user tersimpan');
+
     } catch (e) {
-      print('❌ Error saving user data: $e');
+      print('Error save user: $e');
     }
   }
 
   // ==============================
-  // GET USER DATA (CONSISTENT)
+  // GET USER DATA
   // ==============================
   Future<UserModel?> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = prefs.getString(_userKey);
-      
-      if (jsonString == null) {
-        print('❌ Tidak ada data user di SharedPreferences');
-        return null;
-      }
-      
-      final userData = jsonDecode(jsonString);
-      final user = UserModel.fromJson(userData);
-      
-      print('✅ Data user diambil: ${user.name}');
-      return user;
+
+      if (jsonString == null) return null;
+
+      return UserModel.fromJson(jsonDecode(jsonString));
+
     } catch (e) {
-      print('❌ Error getting user data: $e');
+      print('Error get user: $e');
       return null;
     }
   }
@@ -200,7 +187,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/user/change-password'),
+        Uri.parse('$_baseUrl/user/change-password'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -213,38 +200,19 @@ class AuthService {
         }),
       );
 
+      final data = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print('✅ Password berhasil diubah');
-
-        if (data['token'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_tokenKey, data['token']);
-          print('✅ Token diperbarui setelah ganti password');
-        }
-
-        return {'success': true, 'message': data['message'] ?? 'Password berhasil diubah'};
-      } else if (response.statusCode == 422) {
-        final data = jsonDecode(response.body);
-        String errorMessage = 'Gagal mengubah password';
-
-        if (data['errors'] != null) {
-          final errors = data['errors'] as Map<String, dynamic>;
-          errorMessage = errors.values.first[0];
-        } else if (data['message'] != null) {
-          errorMessage = data['message'];
-        }
-
-        return {'success': false, 'message': errorMessage};
-      } else if (response.statusCode == 401) {
-        return {'success': false, 'message': 'Password lama salah'};
-      } else {
-        final data = jsonDecode(response.body);
-        return {'success': false, 'message': data['message'] ?? 'Gagal mengubah password'};
+        return {'success': true, 'message': data['message']};
       }
+
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Gagal mengubah password',
+      };
+
     } catch (e) {
-      print('💥 Error change password: $e');
-      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 
@@ -252,18 +220,13 @@ class AuthService {
   // LOGOUT
   // ==============================
   Future<void> logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_userKey);
-      await prefs.remove(_tokenKey);
-      print('✅ Logout berhasil, data user & token dihapus');
-    } catch (e) {
-      print('❌ Error during logout: $e');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+    await prefs.remove(_tokenKey);
   }
 
   // ==============================
-  // CEK LOGIN STATUS
+  // CEK LOGIN
   // ==============================
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
