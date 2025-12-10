@@ -1,25 +1,29 @@
 class Building {
-  final int id;
+  final int? id; // nullable
   final String name;
   final int totalFloors;
   final List<Floor>? floors;
 
   Building({
-    required this.id,
+    this.id,
     required this.name,
     required this.totalFloors,
     this.floors,
   });
 
   factory Building.fromJson(Map<String, dynamic> json) {
+    final floorsJson = json['floors'] as List<dynamic>?;
+
     return Building(
-      id: json['id'],
-      name: json['name'],
-      totalFloors: json['total_floors'],
-      floors: json['floors'] != null
-          ? List<Floor>.from(
-              json['floors'].map((f) => Floor.fromJson(f)),
-            )
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      name: json['name']?.toString() ?? '',
+      totalFloors: json['total_floors'] != null
+          ? int.tryParse(json['total_floors'].toString()) ?? 0
+          : 0,
+      floors: floorsJson != null
+          ? floorsJson
+              .map((f) => Floor.fromJson(f as Map<String, dynamic>))
+              .toList()
           : null,
     );
   }
@@ -35,21 +39,23 @@ class Building {
 }
 
 class Floor {
-  final int id;
+  final int? id; // nullable
   final String name;
-  final int buildingId;
+  final int? buildingId; // nullable
 
   Floor({
-    required this.id,
+    this.id,
     required this.name,
-    required this.buildingId,
+    this.buildingId,
   });
 
   factory Floor.fromJson(Map<String, dynamic> json) {
     return Floor(
-      id: json['id'],
-      name: json['name'],
-      buildingId: json['building_id'],
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      name: json['name']?.toString() ?? '',
+      buildingId: json['building_id'] != null
+          ? int.tryParse(json['building_id'].toString())
+          : null,
     );
   }
 

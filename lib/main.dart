@@ -49,10 +49,7 @@ class MyApp extends StatelessWidget {
 
       // 🔹 Lokal dan delegasi terjemahan
       locale: const Locale('id', 'ID'),
-      supportedLocales: const [
-        Locale('id', 'ID'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -88,7 +85,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// 🖼️ Splash Screen untuk cek status login
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -100,37 +96,46 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _nextPage();
   }
 
-  Future<void> _checkLoginStatus() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
-    if (userProvider.user == null) {
-      await userProvider.loadUser();
-    }
+  Future<void> _nextPage() async {
+    await Future.delayed(const Duration(seconds: 2));
 
-    if (mounted) {
-      if (userProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    }
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.loadUser();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(
+      context,
+      userProvider.isLoggedIn ? '/home' : '/login',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text('Memuat...'),
+            Image.asset('assets/images/logo.png', width: 110, height: 110),
+
+            // Geser teks mendekati gambar
+            Transform.translate(
+              offset: const Offset(-20, 0), // geser ke kiri 10px
+              child: const Text(
+                "ManagementHub",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  fontFamily: 'inter',
+                ),
+              ),
+            ),
           ],
         ),
       ),

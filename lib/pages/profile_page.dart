@@ -31,7 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserData();
   }
 
-  // ✅ Load data dari SharedPreferences setiap kali halaman dibuka
   Future<void> _loadUserData() async {
     final freshUser = await _authService.getUserData();
     if (freshUser != null) {
@@ -55,32 +54,35 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Tampilkan loading saat fetch data
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF3949AB)),
+          child: CircularProgressIndicator.adaptive(),
         ),
       );
     }
 
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header "Profil"
+              // Header Section
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 color: Colors.white,
                 child: const Center(
                   child: Text(
                     'Profil',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -88,255 +90,289 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
-              // User Card
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Avatar
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF3949AB),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          currentUser.name.isNotEmpty
-                              ? currentUser.name[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // User Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            currentUser.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentUser.email,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Section: Umum
+              // User Info Card
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Umum',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Umum Card
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _menuItem(
-                      context,
-                      icon: Icons.person_outline,
-                      title: 'Edit Profil',
-                      subtitle: 'Mengubah nama, dan E-mail',
-                      isFirst: true,
-                      onTap: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EditProfilePage(user: currentUser),
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3949AB),
+                            shape: BoxShape.circle,
                           ),
-                        );
-                        if (result != null && result is UserModel) {
-                          // reload lokal
-                          await _loadUserData();
-                          // beri tahu Provider untuk memuat ulang dan notifyListeners
-                          await Provider.of<UserProvider>(
-                            context,
-                            listen: false,
-                          ).forceRefreshUser();
-                          // callback opsional
-                          widget.onProfileUpdate?.call(result);
-                        }
-                      },
-                    ),
-                    Divider(height: 1, color: Colors.grey[200]),
-                    _menuItem(
-                      context,
-                      icon: Icons.lock_outline,
-                      title: 'Mengubah Kata Sandi',
-                      subtitle: 'Memperbarui dan memperkuat keamanan akun anda',
-                      isLast: true,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ChangePasswordPage(user: currentUser),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Section: Pengaturan Lainnya
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Pengaturan Lainnya',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Pengaturan Lainnya Card
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _menuItem(
-                      context,
-                      icon: Icons.history,
-                      title: 'Histori',
-                      subtitle: 'Melihat histori laporan anda',
-                      isFirst: true,
-                      onTap: () async {
-                        final service = DamageReportService();
-                        final token = await _authService.getToken();
-
-                        if (token == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Token tidak ditemukan. Silakan login ulang.',
+                          child: Center(
+                            child: Text(
+                              currentUser.name.isNotEmpty
+                                  ? currentUser.name[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 26,
                               ),
                             ),
-                          );
-                          return;
-                        }
-
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
-
-                        try {
-                          final reports = await service.getReports(token);
-                          Navigator.pop(context);
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => HistoriPage(reports: reports),
-                            ),
-                          );
-                        } catch (e) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gagal mengambil histori laporan'),
-                            ),
-                          );
-                        }
-                      },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                currentUser.name,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currentUser.email,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    Divider(height: 1, color: Colors.grey[200]),
-                    _menuItem(
-                      context,
-                      icon: Icons.logout,
-                      title: 'Keluar',
-                      subtitle: 'Keluar dari akun anda',
-                      textColor: Colors.red,
-                      iconColor: Colors.red,
-                      isLast: true,
-                      onTap: () {
-                        _showLogoutConfirmation(context);
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
+
+              // Section: Umum
+              _buildSectionHeader('Umum'),
+
+              _buildMenuCard(
+                context,
+                items: [
+                  _MenuItemData(
+                    icon: Icons.person_outline,
+                    title: 'Edit Profil',
+                    subtitle: 'Mengubah nama, dan E-mail',
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProfilePage(user: currentUser),
+                        ),
+                      );
+                      if (result != null && result is UserModel) {
+                        await _loadUserData();
+                        await Provider.of<UserProvider>(context, listen: false)
+                            .forceRefreshUser();
+                        widget.onProfileUpdate?.call(result);
+                      }
+                    },
+                  ),
+                  _MenuItemData(
+                    icon: Icons.lock_outline,
+                    title: 'Mengubah Kata Sandi',
+                    subtitle: 'Memperbarui dan memperkuat keamanan akun anda',
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ChangePasswordPage(user: currentUser),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Section: Pengaturan Lainnya
+              _buildSectionHeader('Pengaturan Lainnya'),
+
+              _buildMenuCard(
+                context,
+                items: [
+                  _MenuItemData(
+                    icon: Icons.history,
+                    title: 'Histori',
+                    subtitle: 'Melihat histori laporan anda',
+                    onTap: () async {
+                      final service = DamageReportService();
+                      final token = await _authService.getToken();
+
+                      if (token == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Token tidak ditemukan. Silakan login ulang.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
+
+                      try {
+                        final reports = await service.getReports(token);
+                        Navigator.pop(context);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => HistoriPage(reports: reports),
+                          ),
+                        );
+                      } catch (e) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Gagal mengambil histori laporan'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  _MenuItemData(
+                    icon: Icons.logout,
+                    title: 'Keluar',
+                    subtitle: 'Keluar dari akun anda',
+                    textColor: Colors.red,
+                    iconColor: Colors.red,
+                    onTap: () => _showLogoutConfirmation(context),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 40),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Container(
+            height: 1,
+            width: 20,
+            color: Colors.grey.shade300,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(BuildContext context, {required List<_MenuItemData> items}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: List.generate(
+              items.length,
+              (index) {
+                final item = items[index];
+                return InkWell(
+                  onTap: item.onTap,
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: Colors.grey.shade200,
+                  highlightColor: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(index == 0 ? 20 : 0),
+                        bottom: Radius.circular(
+                            index == items.length - 1 ? 20 : 0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          item.icon,
+                          color: item.iconColor ?? Colors.black54,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: item.textColor ?? Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.subtitle,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey.shade500,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -346,42 +382,47 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierColor: Colors.black87.withOpacity(0.6),
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          elevation: 10,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+          child: Container(
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: Colors.red.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.logout, color: Colors.red, size: 36),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    size: 35,
+                    color: Colors.red,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 const Text(
                   'Keluar dari Akun?',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Apakah anda yakin ingin log out? Sesi anda saat ini akan berakhir.',
+                const SizedBox(height: 10),
+                Text(
+                  'Apakah Anda yakin ingin keluar? Sesi Anda saat ini akan berakhir.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: Colors.grey[600],
                     height: 1.4,
                   ),
                 ),
@@ -392,16 +433,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey[300]!),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: Colors.grey.shade400),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Batal',
                           style: TextStyle(
-                            color: Colors.black87,
+                            color: Colors.grey[700],
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -412,11 +453,49 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(context);
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return Dialog(
+                                backgroundColor: Colors.transparent,
+                                elevation: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const CircularProgressIndicator(
+                                        color: Color(0xFF3949AB),
+                                        strokeWidth: 3,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Keluar...',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+
                           final userProvider = Provider.of<UserProvider>(
                             context,
                             listen: false,
                           );
                           await userProvider.logout();
+
+                          Navigator.pop(context);
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
@@ -426,18 +505,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
                           backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          elevation: 2,
                         ),
                         child: const Text(
-                          'Keluar',
+                          'Ya, Keluar',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -451,55 +529,22 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+}
 
-  // Menu Item Component
-  Widget _menuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Color iconColor = Colors.black54,
-    Color textColor = Colors.black87,
-    bool isFirst = false,
-    bool isLast = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.vertical(
-        top: isFirst ? const Radius.circular(16) : Radius.zero,
-        bottom: isLast ? const Radius.circular(16) : Radius.zero,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 24),
-          ],
-        ),
-      ),
-    );
-  }
+class _MenuItemData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? textColor;
+
+  _MenuItemData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.iconColor,
+    this.textColor,
+  });
 }

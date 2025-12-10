@@ -144,12 +144,18 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-              Text(
-                formattedDate,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    formattedDate,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
 
+              const SizedBox(height: 20),
               const Text(
                 "Pilih Gedung",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

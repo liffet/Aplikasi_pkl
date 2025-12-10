@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/item_model.dart';
 import 'damage_report_page.dart';
 
+// Import ini untuk digunakan dari KalenderPage
+
 class DetailItemPage extends StatelessWidget {
   final ItemModel item;
 
@@ -61,24 +63,39 @@ class DetailItemPage extends StatelessWidget {
                       ),
                     ),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 24),
 
-            // Info Rows
-            _buildInfoRow('KODE', item.code, false),
-            _buildDivider(),
-            _buildInfoRow('NAMA', item.name, false),
-            _buildDivider(),
-            _buildInfoRow('KATEGORI', item.category?.name ?? '-', false),
-            _buildDivider(),
-            _buildInfoRow('RUANGAN', item.room?.name ?? '-', false),
-            _buildDivider(),
-            _buildInfoRow('LANTAI', item.floor?.name ?? '-', false),
-            _buildDivider(),
-            _buildInfoRow('TGL PASANG', formatDate(item.installDate), true, Colors.blue),
-            _buildDivider(),
-            _buildInfoRow('TGL MAINTENANCE', formatDate(item.replacementDate), true, Colors.red),
+            // Info Container dengan Card Style
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  _buildInfoRow('KODE', item.code, Icons.qr_code_rounded),
+                  _buildDivider(),
+                  _buildInfoRow('NAMA', item.name, Icons.label_outline),
+                  _buildDivider(),
+                  _buildInfoRow('KATEGORI', item.category?.name ?? '-', Icons.category_outlined),
+                  _buildDivider(),
+                  _buildInfoRow('GEDUNG', item.building?.name ?? '-', Icons.apartment_rounded),
+                  _buildDivider(),
+                  _buildInfoRow('RUANGAN', item.room?.name ?? '-', Icons.meeting_room_outlined),
+                  _buildDivider(),
+                  _buildInfoRow('LANTAI', item.floor?.name ?? '-', Icons.layers_outlined),
+                  _buildDivider(),
+                  _buildInfoRowWithColor('TGL PASANG', formatDate(item.installDate), 
+                    Icons.calendar_today_rounded, Colors.blue),
+                  _buildDivider(),
+                  _buildInfoRowWithColor('TGL MAINTENANCE', formatDate(item.replacementDate), 
+                    Icons.build_circle_outlined, Colors.red),
+                ],
+              ),
+            ),
 
-            const SizedBox(height: 100),
+            const SizedBox(height: 30),
 
             // Buttons
             Row(
@@ -153,27 +170,87 @@ class DetailItemPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, bool isDate, [Color? valueColor]) {
+  Widget _buildInfoRow(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 16, color: Colors.grey[700]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor ?? Colors.black,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            flex: 4,
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRowWithColor(String label, String value, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -186,6 +263,8 @@ class DetailItemPage extends StatelessWidget {
       color: Colors.grey.shade200,
       thickness: 1,
       height: 1,
+      indent: 16,
+      endIndent: 16,
     );
   }
 }
