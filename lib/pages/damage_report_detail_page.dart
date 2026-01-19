@@ -144,14 +144,16 @@ class DamageReportDetailPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Laporan ini bersifat arsip dan tidak dapat diubah.',
+                          'Laporan ini bersifat arsip dan tidak dapat diubah. Anda hanya dapat melihat detail pelaporan yang telah dikirim.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.black54,
+                            height: 1.4,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -167,6 +169,11 @@ class DamageReportDetailPage extends StatelessWidget {
                             fillColor: Colors.grey[50],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                             contentPadding: const EdgeInsets.all(12),
                           ),
@@ -180,23 +187,55 @@ class DamageReportDetailPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 12),
 
-                        if (report.photo != null &&
-                            report.photo!.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              report.photo!,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) {
-                                return _imageError();
-                              },
-                            ),
+                        if (report.photo != null && report.photo!.isNotEmpty)
+                          Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  report.photo!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) {
+                                    return _imageError();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      color: Colors.green.shade700,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Foto bukti kerusakan tersedia',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.green.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           )
                         else
                           _imageEmpty(),
@@ -233,6 +272,7 @@ class DamageReportDetailPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -266,6 +306,7 @@ class DamageReportDetailPage extends StatelessWidget {
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -298,7 +339,7 @@ class DamageReportDetailPage extends StatelessWidget {
                           height: 52,
                           child: OutlinedButton.icon(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.arrow_back),
+                            icon: const Icon(Icons.arrow_back, size: 24),
                             label: const Text(
                               'Kembali',
                               style: TextStyle(
@@ -349,7 +390,7 @@ class DamageReportDetailPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Gagal memuat gambar',
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
       ),
@@ -362,7 +403,7 @@ class DamageReportDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.grey[300]!, width: 2),
       ),
       alignment: Alignment.center,
       child: Column(
@@ -370,10 +411,10 @@ class DamageReportDetailPage extends StatelessWidget {
         children: [
           Icon(Icons.image_not_supported_outlined,
               size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Tidak ada foto bukti',
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
       ),
