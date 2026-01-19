@@ -4,13 +4,14 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../models/damage_report_model.dart';
-import '../config/api_config.dart'; // ⬅️ Tambahkan ini
+import '../config/api_config.dart';
 
 class DamageReportService {
-  // Ganti hardcode dengan ApiConfig
   final String baseUrl = '${ApiConfig.baseUrl}/damage-reports';
 
-  /// 🔹 [1] Kirim laporan untuk WEB (pakai Uint8List)
+  // ==========================
+  // [1] CREATE REPORT - WEB
+  // ==========================
   Future<bool> createReportWeb(
     DamageReport report,
     String token,
@@ -18,17 +19,17 @@ class DamageReportService {
     String fileName,
   ) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
+      final request = http.MultipartRequest('POST', Uri.parse(baseUrl));
       request.headers.addAll({
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
 
-      // Field teks
-      request.fields['item_id'] = report.itemId.toString();
+      if (report.itemId != null) {
+        request.fields['item_id'] = report.itemId.toString();
+      }
       request.fields['reason'] = report.reason;
 
-      // File dari bytes
       request.files.add(
         http.MultipartFile.fromBytes(
           'photo',
@@ -37,60 +38,53 @@ class DamageReportService {
         ),
       );
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 201) {
-        print('✅ Laporan (WEB) berhasil dibuat: ${response.body}');
-        return true;
-      } else {
-        print('❌ Gagal membuat laporan WEB (${response.statusCode}): ${response.body}');
-        return false;
-      }
+      return response.statusCode == 201;
     } catch (e) {
-      print('❌ Error createReportWeb: $e');
+      print('❌ createReportWeb error: $e');
       return false;
     }
   }
 
-  /// 🔹 [2] Kirim laporan untuk MOBILE (pakai File)
+  // ==========================
+  // [2] CREATE REPORT - MOBILE
+  // ==========================
   Future<bool> createReportMobile(
     DamageReport report,
     String token,
     File photo,
   ) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
+      final request = http.MultipartRequest('POST', Uri.parse(baseUrl));
       request.headers.addAll({
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
 
-      request.fields['item_id'] = report.itemId.toString();
+      if (report.itemId != null) {
+        request.fields['item_id'] = report.itemId.toString();
+      }
       request.fields['reason'] = report.reason;
 
-      // File dari path
       request.files.add(
         await http.MultipartFile.fromPath('photo', photo.path),
       );
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 201) {
-        print('✅ Laporan (MOBILE) berhasil dibuat: ${response.body}');
-        return true;
-      } else {
-        print('❌ Gagal membuat laporan MOBILE (${response.statusCode}): ${response.body}');
-        return false;
-      }
+      return response.statusCode == 201;
     } catch (e) {
-      print('❌ Error createReportMobile: $e');
+      print('❌ createReportMobile error: $e');
       return false;
     }
   }
 
-  /// 🔹 [3] Ambil semua laporan
+  // ==========================
+  // [3] GET ALL REPORTS
+  // ==========================
   Future<List<DamageReport>> getReports(String token) async {
     try {
       final response = await http.get(
@@ -101,23 +95,97 @@ class DamageReportService {
         },
       );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.statusCode != 200) return [];
 
-        if (body.containsKey('data') && body['data'] is List) {
-          final List<dynamic> reportsJson = body['data'];
-          return reportsJson.map((json) => DamageReport.fromJson(json)).toList();
-        } else {
-          print('⚠️ Struktur respons tidak sesuai: ${response.body}');
-          return [];
-        }
-      } else {
-        print('❌ Gagal mengambil laporan (${response.statusCode}): ${response.body}');
-        return [];
+      final body = jsonDecode(response.body);
+
+      if (body['data'] is List) {
+        return (body['data'] as List)
+            .map((e) => DamageReport.fromJson(e))
+            .toList();
       }
-    } catch (e) {
-      print('❌ Error getReports: $e');
+
       return [];
+    } catch (e) {
+      print('❌ getReports error: $e');
+      return [];
+    }
+  }
+
+  // ==========================
+  // [4] GET DETAIL REPORT
+  // ==========================
+  Future<DamageReport?> getReportDetail(
+    int id,
+    String token,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/$id'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode != 200) return null;
+
+      final body = jsonDecode(response.body);
+      return DamageReport.fromJson(body['data']);
+    } catch (e) {
+      print('❌ getReportDetail error: $e');
+      return null;
+    }
+  }
+
+  // ==========================
+  // [5] UPDATE STATUS (ADMIN)
+  // ==========================
+  Future<bool> updateStatus(
+    int reportId,
+    String status,
+    String token,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/$reportId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'status': status,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ updateStatus error: $e');
+      return false;
+    }
+  }
+
+  // ==========================
+  // [6] DELETE REPORT (ADMIN)
+  // ==========================
+  Future<bool> deleteReport(
+    int id,
+    String token,
+  ) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/$id'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ deleteReport error: $e');
+      return false;
     }
   }
 }

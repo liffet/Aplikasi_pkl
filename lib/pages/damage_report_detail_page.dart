@@ -7,25 +7,60 @@ class DamageReportDetailPage extends StatelessWidget {
 
   const DamageReportDetailPage({super.key, required this.report});
 
+  /// ==========================
+  /// STATUS COLOR
+  /// ==========================
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
         return Colors.green;
       case 'rejected':
         return Colors.red;
+      case 'in_progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.teal;
+      case 'pending':
       default:
-        return const Color(0xFF003985);
+        return Colors.orange;
     }
   }
 
+  /// ==========================
+  /// STATUS LABEL
+  /// ==========================
   String _statusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
-        return 'Approve';
+        return 'Disetujui';
       case 'rejected':
-        return 'Rejected';
+        return 'Ditolak';
+      case 'in_progress':
+        return 'Sedang Diproses';
+      case 'completed':
+        return 'Selesai';
+      case 'pending':
       default:
-        return 'Pending';
+        return 'Menunggu';
+    }
+  }
+
+  /// ==========================
+  /// STATUS ICON
+  /// ==========================
+  IconData _statusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return Icons.check_circle_outline;
+      case 'rejected':
+        return Icons.cancel_outlined;
+      case 'in_progress':
+        return Icons.autorenew_rounded;
+      case 'completed':
+        return Icons.task_alt_rounded;
+      case 'pending':
+      default:
+        return Icons.hourglass_bottom;
     }
   }
 
@@ -33,22 +68,27 @@ class DamageReportDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _statusColor(report.status);
     final statusLabel = _statusLabel(report.status);
+    final statusIcon = _statusIcon(report.status);
+
     final dateFormatted = report.createdAt != null
-        ? DateFormat('dd/MM/yyyy').format(report.createdAt!)
-        : '-';
-    final dueDate = report.createdAt != null
-        ? DateFormat('dd/MM/yyyy').format(report.createdAt!.add(const Duration(days: 30)))
+        ? DateFormat('dd MMM yyyy', 'id_ID').format(report.createdAt!)
         : '-';
 
-    final firstLetter = (report.itemName != null && report.itemName!.isNotEmpty)
-        ? report.itemName![0].toUpperCase()
-        : '?';
+    final dueDate = report.createdAt != null
+        ? DateFormat('dd MMM yyyy', 'id_ID')
+            .format(report.createdAt!.add(const Duration(days: 30)))
+        : '-';
+
+    final firstLetter =
+        (report.itemName?.isNotEmpty ?? false) ? report.itemName![0] : '?';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Column(
         children: [
-          // 🔹 Header dengan status
+          /// ==========================
+          /// HEADER STATUS
+          /// ==========================
           SafeArea(
             child: Container(
               padding: const EdgeInsets.all(20),
@@ -62,11 +102,7 @@ class DamageReportDetailPage extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      statusLabel == 'Approve'
-                          ? Icons.check_circle_outline
-                          : statusLabel == 'Rejected'
-                              ? Icons.cancel_outlined
-                              : Icons.hourglass_bottom,
+                      statusIcon,
                       color: statusColor,
                       size: 24,
                     ),
@@ -85,13 +121,17 @@ class DamageReportDetailPage extends StatelessWidget {
             ),
           ),
 
-          // 🔹 Konten utama
+          /// ==========================
+          /// CONTENT
+          /// ==========================
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(top: 16),
               child: Column(
                 children: [
-                  // 🔸 Box Alasan + Foto Bukti
+                  /// ==========================
+                  /// ALASAN + FOTO
+                  /// ==========================
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -100,29 +140,26 @@ class DamageReportDetailPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Alasan',
+                          'Alasan Laporan',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Laporan ini bersifat arsip dan tidak dapat diubah. Anda hanya dapat melihat detail pelaporan yang telah dikirim.',
+                          'Laporan ini bersifat arsip dan tidak dapat diubah.',
                           style: TextStyle(
-                            color: Colors.black54,
                             fontSize: 13,
-                            height: 1.4,
+                            color: Colors.black54,
                           ),
                         ),
                         const SizedBox(height: 16),
 
-                        // Alasan
+                        /// ALASAN
                         TextField(
-                          controller: TextEditingController(
-                            text: report.reason,
-                          ),
+                          controller:
+                              TextEditingController(text: report.reason),
                           readOnly: true,
                           maxLines: 5,
                           decoration: InputDecoration(
@@ -130,11 +167,6 @@ class DamageReportDetailPage extends StatelessWidget {
                             fillColor: Colors.grey[50],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                             contentPadding: const EdgeInsets.all(12),
                           ),
@@ -142,123 +174,32 @@ class DamageReportDetailPage extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // Foto Bukti Kerusakan (sama seperti DamageReportPage)
+                        /// FOTO
                         const Text(
                           'Foto Bukti Kerusakan',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
-                        if (report.photo != null && report.photo!.isNotEmpty)
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    report.photo!,
-                                    height: 200,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        height: 200,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.broken_image_outlined,
-                                              size: 48,
-                                              color: Colors.grey[400],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Gagal memuat gambar',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        color: Colors.green.shade700,
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          'Foto bukti kerusakan tersedia',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.green.shade900,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+
+                        if (report.photo != null &&
+                            report.photo!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              report.photo!,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) {
+                                return _imageError();
+                              },
                             ),
                           )
                         else
-                          Container(
-                            width: double.infinity,
-                            height: 180,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.grey[300]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.image_not_supported_outlined,
-                                  size: 48,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Tidak ada foto bukti',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          _imageEmpty(),
 
                         const SizedBox(height: 12),
                         Align(
@@ -266,8 +207,8 @@ class DamageReportDetailPage extends StatelessWidget {
                           child: Text(
                             dateFormatted,
                             style: TextStyle(
-                              color: Colors.grey[600],
                               fontSize: 12,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ),
@@ -277,7 +218,9 @@ class DamageReportDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 🔸 Box Perangkat (sama seperti DamageReportPage)
+                  /// ==========================
+                  /// PERANGKAT
+                  /// ==========================
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -290,7 +233,6 @@ class DamageReportDetailPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -305,11 +247,11 @@ class DamageReportDetailPage extends StatelessWidget {
                               ),
                               child: Center(
                                 child: Text(
-                                  firstLetter,
+                                  firstLetter.toUpperCase(),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
                                     fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -324,15 +266,14 @@ class DamageReportDetailPage extends StatelessWidget {
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     report.itemCode ?? 'Kode tidak tersedia',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
                                       fontSize: 13,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                 ],
@@ -341,23 +282,23 @@ class DamageReportDetailPage extends StatelessWidget {
                             Text(
                               dueDate,
                               style: const TextStyle(
-                                color: Color(0xFFE53935),
-                                fontWeight: FontWeight.w500,
+                                color: Colors.red,
                                 fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 35),
+                        const SizedBox(height: 32),
 
-                        // Tombol Kembali (sama seperti DamageReportPage)
+                        /// BUTTON BACK
                         SizedBox(
                           width: double.infinity,
                           height: 52,
                           child: OutlinedButton.icon(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.arrow_back, size: 24),
+                            icon: const Icon(Icons.arrow_back),
                             label: const Text(
                               'Kembali',
                               style: TextStyle(
@@ -383,6 +324,56 @@ class DamageReportDetailPage extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ==========================
+  /// IMAGE STATES
+  /// ==========================
+  Widget _imageError() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.broken_image_outlined,
+              size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 8),
+          Text(
+            'Gagal memuat gambar',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imageEmpty() {
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image_not_supported_outlined,
+              size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 8),
+          Text(
+            'Tidak ada foto bukti',
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),
