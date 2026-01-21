@@ -118,30 +118,33 @@ class _HomePageState extends State<HomePage> {
 
     if (_errorMessage.isNotEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: fetchInitialData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
               ),
-              child: const Text("Coba Lagi"),
-            )
-          ],
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: fetchInitialData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text("Coba Lagi"),
+              )
+            ],
+          ),
         ),
       );
     }
@@ -152,10 +155,12 @@ class _HomePageState extends State<HomePage> {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 8),
+              
               // Header - Greeting
               Text(
                 "Selamat Datang, ${user?.name ?? "User"}",
@@ -179,7 +184,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Dropdown Gedung
               const Text(
@@ -261,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Pilih Lantai
               const Text(
@@ -289,6 +294,7 @@ class _HomePageState extends State<HomePage> {
                     : ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _floors.length,
+                        padding: const EdgeInsets.only(right: 8),
                         itemBuilder: (context, index) {
                           final floor = _floors[index];
                           final isSelected = floor.id == _selectedFloorId;
@@ -352,7 +358,7 @@ class _HomePageState extends State<HomePage> {
                       ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Search Field
               Container(
@@ -390,7 +396,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Daftar Ruangan Header
               const Text(
@@ -407,7 +413,7 @@ class _HomePageState extends State<HomePage> {
               filteredRooms.isEmpty
                   ? Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(40),
+                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                         child: Column(
                           children: [
                             Icon(
@@ -531,6 +537,8 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                     ),
+              
+              const SizedBox(height: 20),
             ],
           ),
         ),
